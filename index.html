@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>sport-frames — scroll-scrubbed video</title>
+<meta name="description" content="El scroll avanza el video, frame a frame. Native HTML/CSS/JS, sin librerías." />
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<header class="intro">
+  <h1>sport-frames</h1>
+  <p>
+    Scrolleá para avanzar el video frame a frame. Es la técnica que usan sitios de deportes
+    para mostrar la secuencia de un gol: un solo <code>&lt;video&gt;</code>, y el progreso del
+    scroll controla <code>video.currentTime</code>. Sin librerías, sin frameworks.
+  </p>
+  <label class="upload">
+    <span>Probar con tu propio video</span>
+    <input id="file-input" type="file" accept="video/*" />
+  </label>
+  <p class="hint">↓ Scrolleá para empezar ↓</p>
+</header>
+
+<section id="scrolly" class="scrolly">
+  <div class="scrolly__stage">
+    <div class="scrolly__video-wrap">
+      <video
+        id="scrolly-video"
+        muted
+        playsinline
+        preload="auto"
+        src="assets/default.mp4"
+      ></video>
+      <div class="scrolly__progress"><div id="scrolly-progress-bar" class="scrolly__progress-bar"></div></div>
+    </div>
+
+    <div class="scrolly__captions">
+      <p class="scrolly__caption" data-at="0.02" data-side="left">
+        Arranca la jugada. El video está quieto: sos vos, con el scroll, quien lo hace avanzar.
+      </p>
+      <p class="scrolly__caption" data-at="0.28" data-side="right">
+        Cada frame corresponde a una posición exacta del scroll — no hay play/pause, es
+        <code>currentTime = progreso * duración</code>.
+      </p>
+      <p class="scrolly__caption" data-at="0.55" data-side="left">
+        El &lt;video&gt; queda <code>sticky</code> ocupando la pantalla; lo que se mueve
+        sos vos, no el video.
+      </p>
+      <p class="scrolly__caption" data-at="0.82" data-side="right">
+        Último tramo. Al soltar el scroll acá, el video queda congelado en este frame exacto.
+      </p>
+    </div>
+  </div>
+</section>
+
+<footer class="outro">
+  <p>Fin del scrollytelling. Repo: <a href="https://github.com/sebasfavaron/sport-frames">sebasfavaron/sport-frames</a></p>
+</footer>
+
+<script src="script.js"></script>
+</body>
+</html>

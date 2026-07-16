@@ -1,0 +1,183 @@
+:root {
+  --bg: #0b0b0d;
+  --fg: #f2f2f0;
+  --muted: #9a9a9f;
+  --accent: #ff3b30;
+  --card: #17171a;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+.intro, .outro {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 4rem 1.5rem;
+  text-align: center;
+}
+
+.intro h1 {
+  font-size: 2.2rem;
+  margin-bottom: 0.5rem;
+  letter-spacing: -0.02em;
+}
+
+.intro p {
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.intro code, .scrolly__caption code {
+  background: var(--card);
+  color: var(--fg);
+  padding: 0.1em 0.4em;
+  border-radius: 4px;
+  font-size: 0.9em;
+}
+
+.upload {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin: 1.5rem 0;
+  padding: 1rem 1.25rem;
+  background: var(--card);
+  border: 1px dashed #3a3a3f;
+  border-radius: 10px;
+}
+
+.upload span {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.hint {
+  font-size: 0.85rem;
+  opacity: 0.7;
+  animation: bob 1.6s ease-in-out infinite;
+}
+
+@keyframes bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(6px); }
+}
+
+/* --- scrollytelling track --- */
+
+.scrolly {
+  position: relative;
+  /* height is set inline by script.js based on video duration */
+  height: 400vh;
+}
+
+.scrolly__stage {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #000;
+}
+
+.scrolly__video-wrap {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#scrolly-video {
+  max-width: 100%;
+  max-height: 100%;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: #000;
+}
+
+.scrolly__progress {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.scrolly__progress-bar {
+  height: 100%;
+  width: 0%;
+  background: var(--accent);
+  transition: width 0.05s linear;
+}
+
+.scrolly__captions {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.scrolly__caption {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%) translateX(0);
+  max-width: 320px;
+  margin: 0;
+  padding: 1rem 1.25rem;
+  background: rgba(11, 11, 13, 0.82);
+  backdrop-filter: blur(6px);
+  border-left: 3px solid var(--accent);
+  border-radius: 6px;
+  font-size: 1rem;
+  line-height: 1.45;
+  opacity: 0;
+  transition: opacity 0.35s ease, transform 0.35s ease;
+}
+
+.scrolly__caption[data-side="left"] {
+  left: 5%;
+  transform: translateY(-50%) translateX(-12px);
+}
+
+.scrolly__caption[data-side="right"] {
+  right: 5%;
+  transform: translateY(-50%) translateX(12px);
+}
+
+.scrolly__caption.is-visible {
+  opacity: 1;
+  transform: translateY(-50%) translateX(0);
+}
+
+@media (max-width: 700px) {
+  .scrolly__caption {
+    max-width: 80%;
+    left: 50% !important;
+    right: auto !important;
+    transform: translate(-50%, -50%) !important;
+    top: auto;
+    bottom: 6%;
+  }
+  .scrolly__caption.is-visible {
+    opacity: 1;
+  }
+}
+
+.outro {
+  padding-bottom: 6rem;
+}
+
+.outro a {
+  color: var(--accent);
+}
