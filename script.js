@@ -101,6 +101,16 @@
 
   window.addEventListener("scroll", onScroll, { passive: true });
 
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") {
+      // rAF is throttled/paused while hidden, so currentTime can go stale;
+      // resync as soon as focus returns instead of waiting for the next
+      // manual scroll, which is what made the catch-up jump feel jarring.
+      ticking = false;
+      onScroll();
+    }
+  });
+
   if (video.readyState >= 1) {
     setTrackHeight(video.duration);
   } else {
