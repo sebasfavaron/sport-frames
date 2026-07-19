@@ -42,6 +42,19 @@ del track se recalcula solo según la duración del nuevo video.
 Para que scrubee suave, conviene que el video tenga muchos keyframes (lo ideal es re-codificarlo
 como arriba antes de subirlo como default permanente del repo).
 
+## Sugerir anchors de captions
+
+No hace falta calcular cada `data-at` a ojo. Para un primer borrador, el helper usa el detector de
+cambios de escena ya incluido en FFmpeg y devuelve `<p>` listos para pegar:
+
+```bash
+tools/suggest-caption-anchors.sh mi-jugada.mp4 0.12 2 > captions.html
+```
+
+Revisá los frames sugeridos, cambiá los `TODO`, y pegá los elementos dentro de
+`.scrolly__captions` en `index.html`. El detector sugiere timing visual; no inventa el relato ni
+identifica jugadas. Detalle de decisión, límites y alternativas: [`docs/live-annotations.md`](docs/live-annotations.md).
+
 ## Desarrollo local
 
 No hay build step. Cualquier server estático sirve:
