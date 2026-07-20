@@ -128,6 +128,43 @@ html, body {
   pointer-events: none;
 }
 
+.annotation-preview {
+  position: fixed;
+  z-index: 10;
+  right: 1rem;
+  bottom: 1rem;
+  display: grid;
+  gap: 0.4rem;
+  max-width: min(22rem, calc(100vw - 2rem));
+  padding: 0.75rem;
+  background: rgba(11, 11, 13, 0.92);
+  border: 1px solid #3a3a3f;
+  border-radius: 8px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
+  font-size: 0.8rem;
+}
+
+.annotation-preview__time,
+.annotation-preview__active,
+.annotation-preview__status { color: var(--muted); }
+
+.annotation-preview__active {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.annotation-preview button {
+  padding: 0.45rem 0.6rem;
+  color: var(--fg);
+  background: var(--accent);
+  border: 0;
+  border-radius: 4px;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
 .scrolly__caption {
   position: absolute;
   top: 50%;

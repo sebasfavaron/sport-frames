@@ -30,3 +30,22 @@ tools/suggest-caption-anchors.sh my-play.mp4 0.12 2 > captions.html
 | Sports CV/telestrator SaaS | Can label plays/objects, but needs upload/API/vendor evaluation and still needs editorial review | Out of scope |
 
 Sources: [FFmpeg select filter](https://ffmpeg.org/ffmpeg-filters.html#select_002c-aselect), [FFmpeg metadata filter](https://ffmpeg.org/ffmpeg-filters.html#metadata_002c-ametadata), [PySceneDetect](https://www.scenedetect.com/).
+
+## T-049.2: live annotation preview
+
+### Decision
+
+Add an opt-in preview using native browser APIs, not an annotation product.
+
+- Open `/?annotation-preview`. The fixed panel updates with current normalized scroll progress, video second, and active existing caption during each scroll scrub.
+- **Copy current anchor** uses the [Clipboard API](https://developer.mozilla.org/en-US/docs/Web/API/Clipboard/writeText) to copy a paste-ready `<p data-at="…">` element at the live position.
+- This is an authoring assist only: no caption editing, storage, accounts, upload, synchronization, or runtime dependency. Clipboard permission/failure is visibly reported.
+- It reuses the current page's native URL query and Clipboard APIs. A library would add install/runtime surface without solving a missing problem.
+
+### Options considered
+
+| Approach | Fit | Decision |
+| --- | --- | --- |
+| Native query + Clipboard API | Existing browser capabilities; zero dependency; live values match the scrubbed video | Selected |
+| Full caption authoring UI | Requires editing, validation, persistence/export and interaction design | Out of scope |
+| Live ASR/OCR service | Could suggest text, but adds model/vendor/upload evaluation and is independent from the immediate timing-preview gap | Defer |

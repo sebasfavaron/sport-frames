@@ -55,6 +55,14 @@ Revisá los frames sugeridos, cambiá los `TODO`, y pegá los elementos dentro d
 `.scrolly__captions` en `index.html`. El detector sugiere timing visual; no inventa el relato ni
 identifica jugadas. Detalle de decisión, límites y alternativas: [`docs/live-annotations.md`](docs/live-annotations.md).
 
+## Preview de anotación en vivo
+
+Abrí la página con `?annotation-preview` (por ejemplo
+`http://localhost:8000/?annotation-preview`). El panel opt-in actualiza progreso, segundo actual
+y caption activo en cada scrub; **Copy current anchor** copia un `<p data-at="…">` listo para
+pegar. Usa APIs nativas de URL y Clipboard: no guarda estado, no edita captions y no es una UI de
+autoría.
+
 ## Desarrollo local
 
 No hay build step. Cualquier server estático sirve:

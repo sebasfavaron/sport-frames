@@ -27,3 +27,15 @@ Fields:
   - completed: `tools/suggest-caption-anchors.sh` wraps FFmpeg `select`/`scene` and emits paste-ready normalized `data-at` caption elements; research/decision in `docs/live-annotations.md`
   - verified 2026-07-19: `bash -n tools/suggest-caption-anchors.sh`; `./tools/suggest-caption-anchors.sh assets/default.mp4 0.09 2` emitted a valid opening anchor plus `data-at="0.210"` from the 3.080s scene-score candidate; static server returned HTTP 200 for `/` and `/docs/live-annotations.md`
 - tags: [project:sport-frames, type:scene-anchor-suggestions, criterion:live-annotations]
+
+### T-049.2 - Live annotation preview and one-click anchor copy
+- status: `done`
+- goal: add an opt-in, real-time browser preview that shows current scrub progress/time and copies a paste-ready caption anchor without creating an authoring UI
+- source: `T-049; Sebas 2026-07-19 standing criterion: live annotations`
+- workspace: `/home/sebas/work/projects/sport-frames`
+- next_step:
+  - select the next narrow live-annotation improvement
+- notes:
+  - completed: `?annotation-preview` adds a native URL/Clipboard API panel with live normalized progress, target video second, active caption, and one-click paste-ready `data-at`; no state, edit controls, services, or dependency
+  - verified 2026-07-20: `node --check script.js`; `git diff --check`; `bash -n tools/suggest-caption-anchors.sh`; real FFmpeg run `./tools/suggest-caption-anchors.sh assets/default.mp4 0.09 2` emitted opening plus `data-at="0.210"`; headless Chromium opened `/?annotation-preview` against `assets/default.mp4`, updated to `0.086 / 1.258s`, and copied valid `data-at="0.086"`; HTTP 200
+- tags: [project:sport-frames, type:live-anchor-preview, criterion:live-annotations]
