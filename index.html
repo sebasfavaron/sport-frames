@@ -32,7 +32,9 @@
         playsinline
         preload="auto"
         src="assets/default.mp4"
-      ></video>
+        <track id="scrolly-annotations" kind="metadata" src="assets/default.vtt" default />
+      </video>
+      <div id="scrolly-vtt-annotation" class="scrolly__vtt-annotation" aria-live="polite"></div>
       <div class="scrolly__progress"><div id="scrolly-progress-bar" class="scrolly__progress-bar"></div></div>
     </div>
 

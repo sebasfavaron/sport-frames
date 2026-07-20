@@ -49,3 +49,27 @@ Add an opt-in preview using native browser APIs, not an annotation product.
 | Native query + Clipboard API | Existing browser capabilities; zero dependency; live values match the scrubbed video | Selected |
 | Full caption authoring UI | Requires editing, validation, persistence/export and interaction design | Out of scope |
 | Live ASR/OCR service | Could suggest text, but adds model/vendor/upload evaluation and is independent from the immediate timing-preview gap | Defer |
+
+## T-049.3: native WebVTT timed annotation playback
+
+### Decision
+
+Use the browser's existing `TextTrack` / [WebVTT](https://www.w3.org/TR/webvtt1/) support for
+reviewed, time-based annotation playback on the checked-in default video.
+
+- `assets/default.vtt` is a portable cue file; the hidden metadata track exposes its active cue
+  while scroll scrubbing changes `video.currentTime`, and the page renders that cue above the video.
+- It separates reviewed prose/timing from markup and is compatible with tools that already import
+  or export WebVTT. Runtime remains native static HTML/CSS/JS.
+- The checked-in track disables itself for an uploaded local video, preventing default-video copy
+  from being shown against unrelated footage.
+- No VTT editor, upload/persistence layer, generated transcript, account, API, or backend.
+
+### Options considered
+
+| Approach | Fit | Decision |
+| --- | --- | --- |
+| Native `<track>` + WebVTT | Browser standard; portable timed-cue format; zero dependency | Selected |
+| Embed cue text in JavaScript | Smaller first diff but not interoperable with existing caption/video tools | Reject |
+| In-browser VTT editor/import/export UI | Needs validation, source selection, state and export interactions | Out of scope |
+| ASR/transcription service | Could create draft copy but adds vendor/upload/model review concerns | Defer |

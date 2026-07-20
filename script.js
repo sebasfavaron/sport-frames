@@ -2,6 +2,8 @@
   const track = document.getElementById("scrolly");
   const video = document.getElementById("scrolly-video");
   const progressBar = document.getElementById("scrolly-progress-bar");
+  const annotationTrack = document.getElementById("scrolly-annotations");
+  const vttAnnotation = document.getElementById("scrolly-vtt-annotation");
   const captions = Array.from(document.querySelectorAll(".scrolly__caption"));
   const fileInput = document.getElementById("file-input");
   const previewEnabled = new URLSearchParams(window.location.search).has("annotation-preview");
@@ -69,6 +71,13 @@
     return clamp(-rect.top / scrollable, 0, 1);
   }
 
+  function updateVttAnnotation() {
+    const activeCues = annotationTrack.track.activeCues;
+    vttAnnotation.textContent = activeCues && activeCues.length
+      ? Array.from(activeCues, (cue) => cue.text).join(" ")
+      : "";
+  }
+
   function updateCaptions(progress) {
     let activeCaption = null;
     captionAnchors.forEach((item, i) => {
@@ -93,6 +102,7 @@
     }
 
     progressBar.style.width = `${progress * 100}%`;
+    updateVttAnnotation();
     updatePreview(progress, targetTime, updateCaptions(progress));
   }
 
@@ -108,6 +118,8 @@
       URL.revokeObjectURL(objectUrl);
       objectUrl = null;
     }
+    annotationTrack.track.mode = src === "assets/default.mp4" ? "hidden" : "disabled";
+    vttAnnotation.textContent = "";
     video.src = src;
     video.load();
     video.addEventListener(
@@ -121,6 +133,8 @@
     );
   }
 
+  annotationTrack.track.mode = "hidden";
+  annotationTrack.track.addEventListener("cuechange", updateVttAnnotation);
   setupPreview();
 
   fileInput.addEventListener("change", (e) => {

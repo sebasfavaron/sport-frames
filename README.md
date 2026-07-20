@@ -63,6 +63,23 @@ y caption activo en cada scrub; **Copy current anchor** copia un `<p data-at="�
 pegar. Usa APIs nativas de URL y Clipboard: no guarda estado, no edita captions y no es una UI de
 autoría.
 
+## Anotaciones temporizadas WebVTT
+
+El video default carga `assets/default.vtt` con el estándar nativo [WebVTT](https://www.w3.org/TR/webvtt1/).
+El browser activa el cue que corresponde a cada `currentTime` durante el scrub y la página lo dibuja
+arriba del video. Para otra secuencia permanente, reemplazá ese archivo por cues revisados:
+
+```vtt
+WEBVTT
+
+00:04.500 --> 00:09.500
+Seguimiento de la jugada
+```
+
+Es un formato interoperable con reproductores y editores que exportan VTT. No hay editor, estado,
+ni servicio: para videos locales subidos en la página, la capa default se desactiva para no mostrar
+anotaciones de otro video.
+
 ## Desarrollo local
 
 No hay build step. Cualquier server estático sirve:

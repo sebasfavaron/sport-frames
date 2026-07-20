@@ -39,3 +39,15 @@ Fields:
   - completed: `?annotation-preview` adds a native URL/Clipboard API panel with live normalized progress, target video second, active caption, and one-click paste-ready `data-at`; no state, edit controls, services, or dependency
   - verified 2026-07-20: `node --check script.js`; `git diff --check`; `bash -n tools/suggest-caption-anchors.sh`; real FFmpeg run `./tools/suggest-caption-anchors.sh assets/default.mp4 0.09 2` emitted opening plus `data-at="0.210"`; headless Chromium opened `/?annotation-preview` against `assets/default.mp4`, updated to `0.086 / 1.258s`, and copied valid `data-at="0.086"`; HTTP 200
 - tags: [project:sport-frames, type:live-anchor-preview, criterion:live-annotations]
+
+### T-049.3 - Native WebVTT timed annotation playback
+- status: `done`
+- goal: add a narrow, portable timed-annotation layer using an existing browser/video standard, without an authoring UI, storage layer, or backend service
+- source: `T-049; Sebas 2026-07-19 standing criterion: live annotations`
+- workspace: `/home/sebas/work/projects/sport-frames`
+- next_step:
+  - select the next narrow live-annotation improvement
+- notes:
+  - completed: checked-in `assets/default.vtt` loads through native HTML `TextTrack` metadata; active WebVTT cues render during scroll scrubbing; annotations disable for an unrelated uploaded local video
+  - verified 2026-07-20: `node --check script.js`; `git diff --check`; real `assets/default.mp4` plus `assets/default.vtt` remuxed with FFmpeg and `ffprobe` read all three cue packets at `0.000/4.500`, `4.500/5.000`, and `9.500/5.167` seconds; static server returned HTTP 200 with `text/vtt`
+- tags: [project:sport-frames, type:webvtt-timed-playback, criterion:live-annotations]
