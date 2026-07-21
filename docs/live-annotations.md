@@ -73,3 +73,25 @@ reviewed, time-based annotation playback on the checked-in default video.
 | Embed cue text in JavaScript | Smaller first diff but not interoperable with existing caption/video tools | Reject |
 | In-browser VTT editor/import/export UI | Needs validation, source selection, state and export interactions | Out of scope |
 | ASR/transcription service | Could create draft copy but adds vendor/upload/model review concerns | Defer |
+
+## T-049.4: WebVTT cue timing helper
+
+### Decision
+
+Add an opt-in two-click cue timing helper using the existing [WebVTT cue timing
+syntax](https://www.w3.org/TR/webvtt1/#webvtt-cue-timings), not another annotation system.
+
+- Open `/?vtt-cue`, scroll to a cue start, click **Mark cue start**, then scroll forward and click
+  **Copy WebVTT cue**. It copies a paste-ready `HH:MM:SS.mmm --> HH:MM:SS.mmm` cue with a `TODO` body.
+- Timing is held only in the current page and the generated text uses the native Clipboard API. There
+  is no editor, file state, export flow, account, upload, service, or dependency.
+- This is distinct from the normalized HTML caption-anchor copy: it speeds authoring of the portable
+  time-based WebVTT layer already played by the page.
+
+### Options considered
+
+| Approach | Fit | Decision |
+| --- | --- | --- |
+| Native two-click WebVTT cue timing | Produces standard cue syntax at the real scrub time; zero runtime dependency | Selected |
+| WebVTT editor/import/export product | Requires cue list, validation, file state and export UX | Out of scope |
+| Live ASR service | Suggests prose, but needs vendor/model/upload review and does not solve cue timing alone | Defer |

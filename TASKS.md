@@ -51,3 +51,15 @@ Fields:
   - completed: checked-in `assets/default.vtt` loads through native HTML `TextTrack` metadata; active WebVTT cues render during scroll scrubbing; annotations disable for an unrelated uploaded local video
   - verified 2026-07-20: `node --check script.js`; `git diff --check`; real `assets/default.mp4` plus `assets/default.vtt` remuxed with FFmpeg and `ffprobe` read all three cue packets at `0.000/4.500`, `4.500/5.000`, and `9.500/5.167` seconds; static server returned HTTP 200 with `text/vtt`
 - tags: [project:sport-frames, type:webvtt-timed-playback, criterion:live-annotations]
+
+### T-049.4 - Copy a timed WebVTT cue from live scrub positions
+- status: `done`
+- goal: add a narrow, standards-based live timing assist that creates a paste-ready WebVTT cue without building an authoring product
+- source: `T-049; Sebas 2026-07-21 standing criterion: live annotations`
+- workspace: `/home/sebas/work/projects/sport-frames`
+- next_step:
+  - select the next narrow live-annotation improvement
+- notes:
+  - completed: `?vtt-cue` adds an opt-in two-click native Clipboard workflow: mark the live scrubbed cue start, move forward, then copy a `HH:MM:SS.mmm --> HH:MM:SS.mmm` WebVTT cue with TODO body; timing is temporary and in-memory only
+  - verified 2026-07-21: `node --check script.js`; `git diff --check`; Python `HTMLParser` parsed `index.html`; HTTP 200 from a real static server for `/?vtt-cue`; source/output reviewed to ensure forward-only timing and valid zero-padded WebVTT timestamps
+- tags: [project:sport-frames, type:webvtt-cue-timing-helper, criterion:live-annotations]

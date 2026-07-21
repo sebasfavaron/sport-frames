@@ -165,7 +165,10 @@ html, body {
 
 .annotation-preview__time,
 .annotation-preview__active,
-.annotation-preview__status { color: var(--muted); }
+.annotation-preview__status,
+.vtt-cue__time { color: var(--muted); }
+
+.vtt-cue { bottom: 10rem; }
 
 .annotation-preview__active {
   overflow: hidden;

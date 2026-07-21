@@ -6,7 +6,9 @@
   const vttAnnotation = document.getElementById("scrolly-vtt-annotation");
   const captions = Array.from(document.querySelectorAll(".scrolly__caption"));
   const fileInput = document.getElementById("file-input");
-  const previewEnabled = new URLSearchParams(window.location.search).has("annotation-preview");
+  const params = new URLSearchParams(window.location.search);
+  const previewEnabled = params.has("annotation-preview");
+  const vttCueEnabled = params.has("vtt-cue");
   const captionAnchors = captions
     .map((el) => ({ el, at: parseFloat(el.dataset.at) }))
     .filter((item) => Number.isFinite(item.at))
@@ -20,10 +22,21 @@
   let inView = false;
   let ticking = false;
   let preview = null;
+  let vttCue = null;
+  let cueStart = null;
 
   const clamp = (n, min, max) => Math.min(max, Math.max(min, n));
   const anchorHtml = (progress) =>
     `<p class="scrolly__caption" data-at="${progress.toFixed(3)}" data-side="left">TODO: caption</p>`;
+  const vttTimestamp = (seconds) => {
+    const milliseconds = Math.max(0, Math.round(seconds * 1000));
+    const hours = Math.floor(milliseconds / 3600000);
+    const minutes = Math.floor((milliseconds % 3600000) / 60000);
+    const secs = Math.floor((milliseconds % 60000) / 1000);
+    const ms = milliseconds % 1000;
+    return [hours, minutes, secs].map((part) => String(part).padStart(2, "0")).join(":") +
+      `.${String(ms).padStart(3, "0")}`;
+  };
 
   function setupPreview() {
     if (!previewEnabled) return;
@@ -50,6 +63,45 @@
     document.body.append(preview);
   }
 
+  function setupVttCue() {
+    if (!vttCueEnabled) return;
+
+    vttCue = document.createElement("aside");
+    vttCue.className = "annotation-preview vtt-cue";
+    vttCue.setAttribute("aria-label", "WebVTT cue helper");
+    vttCue.innerHTML = `
+      <strong>WebVTT cue helper</strong>
+      <span class="vtt-cue__time">0.000s</span>
+      <button type="button">Mark cue start</button>
+      <span class="annotation-preview__status" aria-live="polite">Temporary only; no cue is saved.</span>`;
+    vttCue.querySelector("button").addEventListener("click", async () => {
+      const targetTime = scrollProgress() * video.duration;
+      const button = vttCue.querySelector("button");
+      const status = vttCue.querySelector(".annotation-preview__status");
+      if (cueStart === null) {
+        cueStart = targetTime;
+        button.textContent = "Copy WebVTT cue";
+        status.textContent = `Start marked at ${vttTimestamp(cueStart)}`;
+        return;
+      }
+      if (targetTime <= cueStart) {
+        status.textContent = "Move forward before copying a cue.";
+        return;
+      }
+      try {
+        await navigator.clipboard.writeText(
+          `${vttTimestamp(cueStart)} --> ${vttTimestamp(targetTime)}\nTODO: annotation\n`
+        );
+        status.textContent = `Copied ${vttTimestamp(cueStart)} → ${vttTimestamp(targetTime)}`;
+        cueStart = null;
+        button.textContent = "Mark cue start";
+      } catch {
+        status.textContent = "Clipboard unavailable; copy permission required.";
+      }
+    });
+    document.body.append(vttCue);
+  }
+
   function updatePreview(progress, targetTime, activeCaption) {
     if (!preview) return;
     preview.querySelector(".annotation-preview__time").textContent =
@@ -57,6 +109,11 @@
     preview.querySelector(".annotation-preview__active").textContent = activeCaption
       ? `Active: ${activeCaption.el.textContent.trim()}`
       : "No active caption";
+  }
+
+  function updateVttCue(targetTime) {
+    if (!vttCue) return;
+    vttCue.querySelector(".vtt-cue__time").textContent = `${vttTimestamp(targetTime)}${cueStart === null ? "" : ` (start: ${vttTimestamp(cueStart)})`}`;
   }
 
   function setTrackHeight(durationSeconds) {
@@ -103,6 +160,7 @@
 
     progressBar.style.width = `${progress * 100}%`;
     updateVttAnnotation();
+    updateVttCue(targetTime);
     updatePreview(progress, targetTime, updateCaptions(progress));
   }
 
@@ -136,6 +194,7 @@
   annotationTrack.track.mode = "hidden";
   annotationTrack.track.addEventListener("cuechange", updateVttAnnotation);
   setupPreview();
+  setupVttCue();
 
   fileInput.addEventListener("change", (e) => {
     const file = e.target.files && e.target.files[0];
