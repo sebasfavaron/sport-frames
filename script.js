@@ -6,6 +6,7 @@
   const vttAnnotation = document.getElementById("scrolly-vtt-annotation");
   const captions = Array.from(document.querySelectorAll(".scrolly__caption"));
   const fileInput = document.getElementById("file-input");
+  const vttFileInput = document.getElementById("vtt-file-input");
   const params = new URLSearchParams(window.location.search);
   const previewEnabled = params.has("annotation-preview");
   const vttCueEnabled = params.has("vtt-cue");
@@ -19,6 +20,8 @@
   const MAX_VH = 3000;
 
   let objectUrl = null;
+  let annotationObjectUrl = null;
+  let customAnnotationLoaded = false;
   let inView = false;
   let ticking = false;
   let preview = null;
@@ -176,7 +179,9 @@
       URL.revokeObjectURL(objectUrl);
       objectUrl = null;
     }
-    annotationTrack.track.mode = src === "assets/default.mp4" ? "hidden" : "disabled";
+    annotationTrack.track.mode = (src === "assets/default.mp4" || customAnnotationLoaded)
+      ? "hidden"
+      : "disabled";
     vttAnnotation.textContent = "";
     video.src = src;
     video.load();
@@ -201,6 +206,19 @@
     if (!file) return;
     objectUrl = URL.createObjectURL(file);
     loadVideoSource(objectUrl, { revoke: false });
+    track.scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+
+  vttFileInput.addEventListener("change", (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    if (annotationObjectUrl) URL.revokeObjectURL(annotationObjectUrl);
+    annotationObjectUrl = URL.createObjectURL(file);
+    customAnnotationLoaded = true;
+    annotationTrack.track.mode = "disabled";
+    annotationTrack.src = annotationObjectUrl;
+    annotationTrack.track.mode = "hidden";
+    vttAnnotation.textContent = "";
     track.scrollIntoView({ behavior: "smooth", block: "start" });
   });
 

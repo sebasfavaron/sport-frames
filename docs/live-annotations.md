@@ -95,3 +95,23 @@ syntax](https://www.w3.org/TR/webvtt1/#webvtt-cue-timings), not another annotati
 | Native two-click WebVTT cue timing | Produces standard cue syntax at the real scrub time; zero runtime dependency | Selected |
 | WebVTT editor/import/export product | Requires cue list, validation, file state and export UX | Out of scope |
 | Live ASR service | Suggests prose, but needs vendor/model/upload review and does not solve cue timing alone | Defer |
+
+## T-049.5: local WebVTT annotation import
+
+### Decision
+
+Add a native local `.vtt` file chooser to attach existing timed annotations to the current video.
+
+- The browser turns the selected file into a temporary object URL and assigns it to the existing
+  metadata `<track>`; native `TextTrack` playback/rendering remains the sole annotation path.
+- It works for the checked-in default video and an uploaded local video, closing the practical
+  interop gap where the default VTT is deliberately disabled for unrelated footage.
+- No VTT parsing/editor, validation flow, persistence, upload, backend, account, or dependency.
+
+### Options considered
+
+| Approach | Fit | Decision |
+| --- | --- | --- |
+| Native file input + object URL + `<track>` | Reuses browser/WebVTT primitives; supports files exported by caption tools; zero dependency | Selected |
+| Build a VTT editor/import review screen | Requires cue list, validation, editing and export UX | Out of scope |
+| Upload VTT/video to a service | Adds storage, privacy and backend concerns with no need for this preview slice | Reject |

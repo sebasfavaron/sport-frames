@@ -16,6 +16,18 @@ Fields:
 
 ## Items
 
+### T-049.5 - Local WebVTT annotation import
+- status: `done`
+- goal: load an existing local WebVTT annotation file against the current video without building an authoring UI, storage layer, or backend
+- source: `T-032 standing criterion; Sebas 2026-07-21`
+- workspace: `/home/sebas/work/projects/sport-frames`
+- next_step:
+  - select the next narrow live-annotation improvement
+- notes:
+  - completed: native local `.vtt` file input creates a temporary object URL for the existing metadata TextTrack, so a VTT exported by another tool can annotate the default or uploaded local video without upload, storage, editor, backend, or dependency
+  - verified 2026-07-21: `node --check script.js`; `git diff --check`; Python HTMLParser confirmed the `.vtt` file input; real static HTTP server returned `200 text/html` for `/` and `200 text/vtt` for `/assets/default.vtt`
+- tags: [project:sport-frames, type:local-webvtt-import, criterion:live-annotation-generation]
+
 ### T-049.1 - Suggest scroll caption anchors from video scene changes
 - status: `done`
 - goal: add a zero-dependency workflow that converts FFmpeg scene-change candidates into `data-at` caption anchor suggestions

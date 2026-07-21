@@ -76,9 +76,11 @@ WEBVTT
 Seguimiento de la jugada
 ```
 
-Es un formato interoperable con reproductores y editores que exportan VTT. No hay editor, estado,
-ni servicio: para videos locales subidos en la página, la capa default se desactiva para no mostrar
-anotaciones de otro video.
+Es un formato interoperable con reproductores y editores que exportan VTT. Para probar un VTT
+existente contra el video actual (inclusive un video local), elegí el archivo en **Cargar anotaciones
+WebVTT para este video**: se carga temporalmente con la API nativa de archivos/`<track>`, sin subirlo
+ni guardarlo. Sin un VTT elegido, la capa default se desactiva para videos locales para no mostrar
+anotaciones de otro video. No hay editor, estado ni servicio.
 
 ## Desarrollo local
 
