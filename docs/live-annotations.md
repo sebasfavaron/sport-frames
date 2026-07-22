@@ -115,3 +115,31 @@ Add a native local `.vtt` file chooser to attach existing timed annotations to t
 | Native file input + object URL + `<track>` | Reuses browser/WebVTT primitives; supports files exported by caption tools; zero dependency | Selected |
 | Build a VTT editor/import review screen | Requires cue list, validation, editing and export UX | Out of scope |
 | Upload VTT/video to a service | Adds storage, privacy and backend concerns with no need for this preview slice | Reject |
+
+## T-049.6: FFmpeg silence-to-WebVTT cue suggestions
+
+### Decision
+
+Use FFmpeg's existing [`silencedetect`](https://ffmpeg.org/ffmpeg-filters.html#silencedetect)
+filter to draft portable WebVTT cues for sustained quiet intervals.
+
+```bash
+tools/suggest-silence-vtt.sh my-play.mp4 -35 0.5 > quiet-intervals.vtt
+```
+
+- Argument 2 is the silence threshold in dB; argument 3 is the minimum quiet interval in seconds.
+  Tune both to the recording, then load the generated VTT through the existing local WebVTT input.
+- Cues say `TODO: review quiet interval`: silence is only an audio-event candidate, not a claim that a
+  play, replay, or commentary annotation belongs there. Review/delete/replace them in an external
+  VTT-capable tool before use.
+- The helper requires an audio stream and emits standard WebVTT to stdout. It adds no runtime
+  dependency, browser controls, VTT parser/editor, persistence, upload, account, or backend.
+
+### Options considered
+
+| Approach | Fit | Decision |
+| --- | --- | --- |
+| FFmpeg `silencedetect` → WebVTT | Existing local tool; produces portable audio-event timing candidates | Selected |
+| Audio transcription/ASR service | Could draft prose, but adds model/vendor/upload and review concerns | Defer |
+| Browser audio analysis UI | Needs audio decode, tuning controls and authoring state | Reject |
+| Full annotation editor | Requires cue management, validation, persistence and export UX | Out of scope |

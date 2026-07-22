@@ -55,6 +55,21 @@ Revisá los frames sugeridos, cambiá los `TODO`, y pegá los elementos dentro d
 `.scrolly__captions` en `index.html`. El detector sugiere timing visual; no inventa el relato ni
 identifica jugadas. Detalle de decisión, límites y alternativas: [`docs/live-annotations.md`](docs/live-annotations.md).
 
+## Sugerir cues WebVTT por silencios
+
+Para detectar intervalos de audio sostenidamente quietos, el helper de
+[FFmpeg `silencedetect`](https://ffmpeg.org/ffmpeg-filters.html#silencedetect) produce cues WebVTT
+portables:
+
+```bash
+tools/suggest-silence-vtt.sh mi-jugada.mp4 -35 0.5 > silencios.vtt
+```
+
+El segundo argumento es el umbral en dB; el tercero, la duración mínima del silencio. Cada cue dice
+`TODO: review quiet interval`: es una sugerencia de timing de audio, no una anotación automática de
+una jugada. Revisalo, editá/eliminá los cues en una herramienta VTT y cargalo temporalmente con el
+input WebVTT de la página. No sube video/audio ni agrega UI, estado o backend.
+
 ## Preview de anotación en vivo
 
 Abrí la página con `?annotation-preview` (por ejemplo

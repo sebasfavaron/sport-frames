@@ -16,6 +16,18 @@ Fields:
 
 ## Items
 
+### T-049.6 - FFmpeg silence-to-WebVTT cue suggestions
+- status: `done`
+- goal: generate review-only WebVTT cue candidates for sustained quiet intervals using FFmpeg's existing `silencedetect` filter, without an authoring UI, storage layer, or backend
+- source: `T-032 standing criterion; Sebas 2026-07-22`
+- workspace: `/home/sebas/work/projects/sport-frames`
+- next_step:
+  - select the next narrow live-annotation improvement
+- notes:
+  - completed: `tools/suggest-silence-vtt.sh` converts FFmpeg `silencedetect` audio intervals into review-only portable WebVTT `TODO` cues; no runtime dependency, browser controls, parser/editor, persistence, upload, or backend
+  - verified 2026-07-22: `bash -n`; real synthetic MP4 with 2s silence emitted `00:00:01.002 --> 00:00:03.000`; FFmpeg remux + `ffprobe` read its subtitle packet; invalid duration rejected; `git diff --check`; real static server returned `200` for `/` and `docs/live-annotations.md`
+- tags: [project:sport-frames, type:ffmpeg-silence-webvtt-suggestions, criterion:live-annotation-generation]
+
 ### T-049.5 - Local WebVTT annotation import
 - status: `done`
 - goal: load an existing local WebVTT annotation file against the current video without building an authoring UI, storage layer, or backend
