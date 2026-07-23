@@ -70,6 +70,22 @@ El segundo argumento es el umbral en dB; el tercero, la duración mínima del si
 una jugada. Revisalo, editá/eliminá los cues en una herramienta VTT y cargalo temporalmente con el
 input WebVTT de la página. No sube video/audio ni agrega UI, estado o backend.
 
+## Sugerir cues WebVTT por video congelado
+
+Para marcar intervalos donde la imagen queda congelada, el detector
+[FFmpeg `freezedetect`](https://ffmpeg.org/ffmpeg-filters.html#freezedetect) puede generar cues
+WebVTT portables para revisión:
+
+```bash
+tools/suggest-freeze-vtt.sh mi-jugada.mp4 -60 0.5 > congelados.vtt
+```
+
+El segundo argumento es la tolerancia de diferencia de imagen en dB; el tercero, la duración
+mínima. Cada cue dice `TODO: review frozen-video interval`: un freeze puede ser transición,
+pausa o problema de la fuente, no una jugada. Revisalo, editá/eliminá los cues en una herramienta
+VTT y cargalo temporalmente con el input WebVTT de la página. No sube video ni agrega UI, estado,
+backend o dependencia de runtime.
+
 ## Preview de anotación en vivo
 
 Abrí la página con `?annotation-preview` (por ejemplo

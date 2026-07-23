@@ -143,3 +143,32 @@ tools/suggest-silence-vtt.sh my-play.mp4 -35 0.5 > quiet-intervals.vtt
 | Audio transcription/ASR service | Could draft prose, but adds model/vendor/upload and review concerns | Defer |
 | Browser audio analysis UI | Needs audio decode, tuning controls and authoring state | Reject |
 | Full annotation editor | Requires cue management, validation, persistence and export UX | Out of scope |
+
+## T-049.7: FFmpeg freeze-to-WebVTT cue suggestions
+
+### Decision
+
+Use FFmpeg's existing [`freezedetect`](https://ffmpeg.org/ffmpeg-filters.html#freezedetect)
+filter to draft portable WebVTT cues for frozen-video intervals.
+
+```bash
+tools/suggest-freeze-vtt.sh my-play.mp4 -60 0.5 > frozen-intervals.vtt
+```
+
+- Argument 2 is the image-difference noise tolerance in dB; argument 3 is the minimum frozen
+  duration in seconds. Tune both to the source, then load the generated VTT through the existing
+  local WebVTT input.
+- Cues say `TODO: review frozen-video interval`: a freeze may be a transition, pause, replay
+  artifact, or damaged source; it is not a claim that a sports annotation belongs there.
+  Review/delete/replace them in an external VTT-capable tool before use.
+- The helper requires a video stream and emits standard WebVTT to stdout. It adds no runtime
+  dependency, browser controls, VTT parser/editor, persistence, upload, account, or backend.
+
+### Options considered
+
+| Approach | Fit | Decision |
+| --- | --- | --- |
+| FFmpeg `freezedetect` → WebVTT | Existing local tool; produces portable visual-stall timing candidates | Selected |
+| FFmpeg scene detection | Finds visual changes, already covered in T-049.1; does not identify sustained static frames | Excluded as duplicate |
+| Frame-analysis browser UI | Needs decode, tuning controls and authoring state | Reject |
+| Sports CV/ASR service | Adds vendor/model/upload review and does not specifically solve frozen-frame timing | Defer |
