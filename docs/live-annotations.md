@@ -172,3 +172,33 @@ tools/suggest-freeze-vtt.sh my-play.mp4 -60 0.5 > frozen-intervals.vtt
 | FFmpeg scene detection | Finds visual changes, already covered in T-049.1; does not identify sustained static frames | Excluded as duplicate |
 | Frame-analysis browser UI | Needs decode, tuning controls and authoring state | Reject |
 | Sports CV/ASR service | Adds vendor/model/upload review and does not specifically solve frozen-frame timing | Defer |
+
+## T-049.8: FFmpeg black-video-to-WebVTT cue suggestions
+
+### Decision
+
+Use FFmpeg's existing [`blackdetect`](https://ffmpeg.org/ffmpeg-filters.html#blackdetect)
+filter to draft portable WebVTT cues for sustained black-video intervals.
+
+```bash
+tools/suggest-black-vtt.sh my-play.mp4 0.10 0.5 > black-intervals.vtt
+```
+
+- Argument 2 is the pixel blackness threshold from `0` to `1`; argument 3 is the minimum
+  black interval in seconds. The helper uses FFmpeg's default requirement that 98% of pixels
+  pass that threshold. Tune both to the source, then load the generated VTT through the
+  existing local WebVTT input.
+- Cues say `TODO: review black-video interval`: black frames can be an edit, fade, source
+  issue, or broadcast boundary, not a sports event. Review/delete/replace them in an external
+  VTT-capable tool before use.
+- The helper requires a video stream and emits standard WebVTT to stdout. It adds no runtime
+  dependency, browser controls, VTT parser/editor, persistence, upload, account, or backend.
+
+### Options considered
+
+| Approach | Fit | Decision |
+| --- | --- | --- |
+| FFmpeg `blackdetect` → WebVTT | Existing local tool; produces portable edit/boundary timing candidates | Selected |
+| FFmpeg `freezedetect` | Finds static frames, already covered in T-049.7; does not identify black intervals | Excluded as duplicate |
+| Browser frame-analysis UI | Needs decode, tuning controls and authoring state | Reject |
+| Sports CV/ASR service | Adds vendor/model/upload and does not specifically solve black-frame timing | Defer |

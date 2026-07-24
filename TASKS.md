@@ -16,6 +16,18 @@ Fields:
 
 ## Items
 
+### T-049.8 - FFmpeg black-video-to-WebVTT cue suggestions
+- status: `done`
+- goal: generate review-only WebVTT cue candidates for sustained black-video intervals using FFmpeg's existing `blackdetect` filter, without an authoring UI, storage layer, or backend
+- source: `T-049 standing criterion; Sebas 2026-07-24`
+- workspace: `/home/sebas/work/projects/sport-frames`
+- next_step:
+  - select the next narrow live-annotation improvement
+- notes:
+  - completed: `tools/suggest-black-vtt.sh` converts FFmpeg `blackdetect` intervals into review-only portable WebVTT `TODO` cues; no runtime dependency, browser controls, parser/editor, persistence, upload, or backend
+  - verified 2026-07-24: `bash -n`; real synthetic MP4 with a 1s black section emitted `00:00:01.000 --> 00:00:02.000`; FFmpeg remux + `ffprobe` read its subtitle packet; invalid threshold rejected; `node --check script.js`; `git diff --check`; real static server returned `200` for `/` and `docs/live-annotations.md`
+- tags: [project:sport-frames, type:ffmpeg-black-video-webvtt-suggestions, criterion:live-annotations]
+
 ### T-049.7 - FFmpeg freeze-to-WebVTT cue suggestions
 - status: `done`
 - goal: generate review-only WebVTT cue candidates for frozen-video intervals using FFmpeg's existing `freezedetect` filter, without an authoring UI, storage layer, or backend
