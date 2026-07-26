@@ -16,6 +16,18 @@ Fields:
 
 ## Items
 
+### T-049.9 - In-page WebVTT cue editor
+- status: `done`
+- goal: author, edit, retime, delete, preview, copy, and download a sorted WebVTT cue list against the live scrub position
+- source: `T-049 explicit criterion override; Sebas 2026-07-24; redispatched 2026-07-26`
+- workspace: `/home/sebas/work/projects/sport-frames`
+- next_step:
+  - select the next narrow live-annotation improvement
+- notes:
+  - completed: `?vtt-editor` adds in-memory cue CRUD, live scrub timestamp capture, active authored-cue preview, sorted `WEBVTT` generation, Clipboard copy, and `.vtt` Blob download; no backend, account, upload, persistence, external library, or framework
+  - verified 2026-07-26: `node --check`; `git diff --check`; headless Chromium exercised unsorted add/sorted output, edit+retime, delete, live active-cue rendering, scrub-time capture, Clipboard export payload, and download action; static HTTP returned `200 text/html` and `200 text/vtt`
+- tags: [project:sport-frames, type:vtt-cue-editor, criterion:live-annotations]
+
 ### T-049.8 - FFmpeg black-video-to-WebVTT cue suggestions
 - status: `done`
 - goal: generate review-only WebVTT cue candidates for sustained black-video intervals using FFmpeg's existing `blackdetect` filter, without an authoring UI, storage layer, or backend

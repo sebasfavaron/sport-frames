@@ -202,3 +202,28 @@ tools/suggest-black-vtt.sh my-play.mp4 0.10 0.5 > black-intervals.vtt
 | FFmpeg `freezedetect` | Finds static frames, already covered in T-049.7; does not identify black intervals | Excluded as duplicate |
 | Browser frame-analysis UI | Needs decode, tuning controls and authoring state | Reject |
 | Sports CV/ASR service | Adds vendor/model/upload and does not specifically solve black-frame timing | Defer |
+
+## T-049.9: in-page WebVTT cue editor
+
+### Decision
+
+Sebas's 2026-07-24 explicit override puts full local cue authoring in scope. Build it from native
+browser primitives because the existing `?vtt-cue` timing helper proved the workflow and no library
+or service is needed.
+
+- Open `/?vtt-editor`; the fixed panel shows the live scrub timestamp.
+- Capture start/end from the current scrub position, enter cue text, then add it to the in-memory list.
+- Edit supports text changes and retiming (including capturing a new scrub position); cues can also
+  be deleted. Authored active cues render over the video immediately.
+- Export sorts cues by start/end and generates standard `WEBVTT`. Clipboard copy and an
+  `annotations.vtt` browser download use native APIs.
+- State is intentionally page-memory only. No backend, account, upload, framework, external library,
+  or parser/import coupling.
+
+### Options considered
+
+| Approach | Fit | Decision |
+| --- | --- | --- |
+| Native in-page state + Clipboard/Blob download | Covers complete local authoring/export with zero dependency | Selected |
+| External VTT editor | Mature, but breaks the requested against-live-scrub in-page workflow | Reject for this slice |
+| Persistent browser storage | Could survive reloads, but adds migration/stale-video identity concerns without a requirement | Defer |

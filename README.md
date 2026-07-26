@@ -111,7 +111,15 @@ Es un formato interoperable con reproductores y editores que exportan VTT. Para 
 existente contra el video actual (inclusive un video local), elegí el archivo en **Cargar anotaciones
 WebVTT para este video**: se carga temporalmente con la API nativa de archivos/`<track>`, sin subirlo
 ni guardarlo. Sin un VTT elegido, la capa default se desactiva para videos locales para no mostrar
-anotaciones de otro video. No hay editor, estado ni servicio.
+anotaciones de otro video.
+
+### Editor WebVTT en la página
+
+Abrí `/?vtt-editor` para autorizar cues contra el tiempo que estás scrubeando. **Use scrub time**
+captura el segundo visible como inicio o fin. La lista permite editar texto/timing, retimear con una
+nueva posición de scrub y eliminar cues. **Copy VTT** y **Download .vtt** generan el mismo archivo
+`WEBVTT`, siempre ordenado por inicio. El estado vive sólo en memoria: no hay cuenta, backend,
+subida ni dependencia externa.
 
 ## Desarrollo local
 

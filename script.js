@@ -10,6 +10,7 @@
   const params = new URLSearchParams(window.location.search);
   const previewEnabled = params.has("annotation-preview");
   const vttCueEnabled = params.has("vtt-cue");
+  const vttEditorEnabled = params.has("vtt-editor");
   const captionAnchors = captions
     .map((el) => ({ el, at: parseFloat(el.dataset.at) }))
     .filter((item) => Number.isFinite(item.at))
@@ -27,6 +28,10 @@
   let preview = null;
   let vttCue = null;
   let cueStart = null;
+  let vttEditor = null;
+  let editorCues = [];
+  let editingCueId = null;
+  let nextCueId = 1;
 
   const clamp = (n, min, max) => Math.min(max, Math.max(min, n));
   const anchorHtml = (progress) =>
@@ -105,6 +110,139 @@
     document.body.append(vttCue);
   }
 
+  function buildVtt() {
+    const body = [...editorCues]
+      .sort((a, b) => a.start - b.start || a.end - b.end || a.id - b.id)
+      .map((cue) => `${vttTimestamp(cue.start)} --> ${vttTimestamp(cue.end)}\n${cue.text}`)
+      .join("\n\n");
+    return `WEBVTT\n\n${body}${body ? "\n" : ""}`;
+  }
+
+  function currentScrubTime() {
+    return Number.isFinite(video.duration) ? scrollProgress() * video.duration : 0;
+  }
+
+  function setEditorStatus(message) {
+    if (vttEditor) vttEditor.querySelector(".vtt-editor__status").textContent = message;
+  }
+
+  function resetEditorForm() {
+    if (!vttEditor) return;
+    editingCueId = null;
+    vttEditor.querySelector("form").reset();
+    vttEditor.querySelector(".vtt-editor__save").textContent = "Add cue";
+    vttEditor.querySelector(".vtt-editor__cancel").hidden = true;
+  }
+
+  function renderEditorCues() {
+    if (!vttEditor) return;
+    const list = vttEditor.querySelector(".vtt-editor__list");
+    list.replaceChildren();
+    [...editorCues]
+      .sort((a, b) => a.start - b.start || a.end - b.end || a.id - b.id)
+      .forEach((cue) => {
+        const item = document.createElement("li");
+        item.dataset.cueId = String(cue.id);
+        const summary = document.createElement("span");
+        summary.textContent = `${vttTimestamp(cue.start)} → ${vttTimestamp(cue.end)}  ${cue.text}`;
+        const actions = document.createElement("span");
+        actions.className = "vtt-editor__item-actions";
+        actions.innerHTML = `<button type="button" data-action="edit">Edit</button><button type="button" data-action="delete">Delete</button>`;
+        item.append(summary, actions);
+        list.append(item);
+      });
+    vttEditor.querySelector(".vtt-editor__count").textContent = `${editorCues.length} cue${editorCues.length === 1 ? "" : "s"}`;
+  }
+
+  function setupVttEditor() {
+    if (!vttEditorEnabled) return;
+
+    vttEditor = document.createElement("aside");
+    vttEditor.className = "vtt-editor";
+    vttEditor.setAttribute("aria-label", "WebVTT cue editor");
+    vttEditor.innerHTML = `
+      <header><strong>WebVTT cue editor</strong><span class="vtt-editor__live">00:00:00.000</span></header>
+      <form>
+        <label>Start (seconds)<input name="start" type="number" min="0" step="0.001" required></label>
+        <button type="button" data-set-time="start">Use scrub time</button>
+        <label>End (seconds)<input name="end" type="number" min="0" step="0.001" required></label>
+        <button type="button" data-set-time="end">Use scrub time</button>
+        <label class="vtt-editor__text">Cue text<textarea name="text" rows="2" required></textarea></label>
+        <div class="vtt-editor__form-actions"><button class="vtt-editor__save" type="submit">Add cue</button><button class="vtt-editor__cancel" type="button" hidden>Cancel edit</button></div>
+      </form>
+      <div class="vtt-editor__toolbar"><span class="vtt-editor__count">0 cues</span><button type="button" data-export="copy">Copy VTT</button><button type="button" data-export="download">Download .vtt</button></div>
+      <ol class="vtt-editor__list"></ol>
+      <span class="vtt-editor__status" aria-live="polite">In-memory only.</span>`;
+
+    const form = vttEditor.querySelector("form");
+    vttEditor.querySelectorAll("[data-set-time]").forEach((button) => {
+      button.addEventListener("click", () => {
+        form.elements[button.dataset.setTime].value = currentScrubTime().toFixed(3);
+      });
+    });
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      const start = Number(form.elements.start.value);
+      const end = Number(form.elements.end.value);
+      const text = form.elements.text.value.trim();
+      if (!Number.isFinite(start) || !Number.isFinite(end) || start < 0 || end <= start || !text) {
+        setEditorStatus("Cue needs text and an end after its start.");
+        return;
+      }
+      if (editingCueId === null) {
+        editorCues.push({ id: nextCueId++, start, end, text });
+        setEditorStatus("Cue added.");
+      } else {
+        const cue = editorCues.find((item) => item.id === editingCueId);
+        Object.assign(cue, { start, end, text });
+        setEditorStatus("Cue updated.");
+      }
+      resetEditorForm();
+      renderEditorCues();
+      updateVttAnnotation();
+    });
+    vttEditor.querySelector(".vtt-editor__cancel").addEventListener("click", resetEditorForm);
+    vttEditor.querySelector(".vtt-editor__list").addEventListener("click", (event) => {
+      const button = event.target.closest("button");
+      const item = event.target.closest("li");
+      if (!button || !item) return;
+      const id = Number(item.dataset.cueId);
+      if (button.dataset.action === "delete") {
+        editorCues = editorCues.filter((cue) => cue.id !== id);
+        if (editingCueId === id) resetEditorForm();
+        renderEditorCues();
+        updateVttAnnotation();
+        setEditorStatus("Cue deleted.");
+        return;
+      }
+      const cue = editorCues.find((candidate) => candidate.id === id);
+      editingCueId = id;
+      form.elements.start.value = cue.start.toFixed(3);
+      form.elements.end.value = cue.end.toFixed(3);
+      form.elements.text.value = cue.text;
+      vttEditor.querySelector(".vtt-editor__save").textContent = "Update cue";
+      vttEditor.querySelector(".vtt-editor__cancel").hidden = false;
+    });
+    vttEditor.querySelector('[data-export="copy"]').addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(buildVtt());
+        setEditorStatus("WebVTT copied.");
+      } catch {
+        setEditorStatus("Clipboard unavailable; copy permission required.");
+      }
+    });
+    vttEditor.querySelector('[data-export="download"]').addEventListener("click", () => {
+      const url = URL.createObjectURL(new Blob([buildVtt()], { type: "text/vtt" }));
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "annotations.vtt";
+      link.click();
+      setTimeout(() => URL.revokeObjectURL(url), 0);
+      setEditorStatus("annotations.vtt downloaded.");
+    });
+    document.body.append(vttEditor);
+  }
+
   function updatePreview(progress, targetTime, activeCaption) {
     if (!preview) return;
     preview.querySelector(".annotation-preview__time").textContent =
@@ -115,8 +253,10 @@
   }
 
   function updateVttCue(targetTime) {
-    if (!vttCue) return;
-    vttCue.querySelector(".vtt-cue__time").textContent = `${vttTimestamp(targetTime)}${cueStart === null ? "" : ` (start: ${vttTimestamp(cueStart)})`}`;
+    if (vttCue) {
+      vttCue.querySelector(".vtt-cue__time").textContent = `${vttTimestamp(targetTime)}${cueStart === null ? "" : ` (start: ${vttTimestamp(cueStart)})`}`;
+    }
+    if (vttEditor) vttEditor.querySelector(".vtt-editor__live").textContent = vttTimestamp(targetTime);
   }
 
   function setTrackHeight(durationSeconds) {
@@ -133,9 +273,11 @@
 
   function updateVttAnnotation() {
     const activeCues = annotationTrack.track.activeCues;
-    vttAnnotation.textContent = activeCues && activeCues.length
-      ? Array.from(activeCues, (cue) => cue.text).join(" ")
-      : "";
+    const trackText = activeCues ? Array.from(activeCues, (cue) => cue.text) : [];
+    const editorText = editorCues
+      .filter((cue) => video.currentTime >= cue.start && video.currentTime < cue.end)
+      .map((cue) => cue.text);
+    vttAnnotation.textContent = [...trackText, ...editorText].join(" ");
   }
 
   function updateCaptions(progress) {
@@ -200,6 +342,7 @@
   annotationTrack.track.addEventListener("cuechange", updateVttAnnotation);
   setupPreview();
   setupVttCue();
+  setupVttEditor();
 
   fileInput.addEventListener("change", (e) => {
     const file = e.target.files && e.target.files[0];
