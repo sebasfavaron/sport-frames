@@ -32,6 +32,7 @@
   let editorCues = [];
   let editingCueId = null;
   let nextCueId = 1;
+  const VTT_EDITOR_STORAGE_KEY = "sport-frames:vtt-editor-cues";
 
   const clamp = (n, min, max) => Math.min(max, Math.max(min, n));
   const anchorHtml = (progress) =>
@@ -158,6 +159,38 @@
     if (vttEditor) vttEditor.querySelector(".vtt-editor__status").textContent = message;
   }
 
+  function loadPersistedCues() {
+    try {
+      const raw = localStorage.getItem(VTT_EDITOR_STORAGE_KEY);
+      if (!raw) return [];
+      const parsed = JSON.parse(raw);
+      if (!Array.isArray(parsed)) return [];
+      return parsed.filter(
+        (cue) =>
+          cue &&
+          Number.isFinite(cue.start) &&
+          Number.isFinite(cue.end) &&
+          cue.start >= 0 &&
+          cue.end > cue.start &&
+          typeof cue.text === "string" &&
+          cue.text.trim()
+      );
+    } catch {
+      return [];
+    }
+  }
+
+  function saveEditorCues() {
+    try {
+      localStorage.setItem(
+        VTT_EDITOR_STORAGE_KEY,
+        JSON.stringify(editorCues.map(({ start, end, text }) => ({ start, end, text })))
+      );
+    } catch {
+      setEditorStatus("Cue saved in memory, but local storage is unavailable.");
+    }
+  }
+
   function resetEditorForm() {
     if (!vttEditor) return;
     editingCueId = null;
@@ -207,9 +240,10 @@
         <label class="vtt-editor__import">Import .vtt<input type="file" accept="text/vtt,.vtt" data-import></label>
         <button type="button" data-export="copy">Copy VTT</button>
         <button type="button" data-export="download">Download .vtt</button>
+        <button type="button" data-action="clear-all">Clear all cues</button>
       </div>
       <ol class="vtt-editor__list"></ol>
-      <span class="vtt-editor__status" aria-live="polite">In-memory only.</span>`;
+      <span class="vtt-editor__status" aria-live="polite">Saved to this browser only.</span>`;
 
     const form = vttEditor.querySelector("form");
     vttEditor.querySelectorAll("[data-set-time]").forEach((button) => {
@@ -237,6 +271,7 @@
       resetEditorForm();
       renderEditorCues();
       updateVttAnnotation();
+      saveEditorCues();
     });
     vttEditor.querySelector(".vtt-editor__cancel").addEventListener("click", resetEditorForm);
     vttEditor.querySelector(".vtt-editor__list").addEventListener("click", (event) => {
@@ -249,6 +284,7 @@
         if (editingCueId === id) resetEditorForm();
         renderEditorCues();
         updateVttAnnotation();
+        saveEditorCues();
         setEditorStatus("Cue deleted.");
         return;
       }
@@ -278,7 +314,21 @@
       parsed.forEach((cue) => editorCues.push({ id: nextCueId++, ...cue }));
       renderEditorCues();
       updateVttAnnotation();
+      saveEditorCues();
       setEditorStatus(`Imported ${parsed.length} cue${parsed.length === 1 ? "" : "s"}.`);
+    });
+    vttEditor.querySelector('[data-action="clear-all"]').addEventListener("click", () => {
+      if (!editorCues.length) {
+        setEditorStatus("No cues to clear.");
+        return;
+      }
+      if (!window.confirm(`Delete all ${editorCues.length} cue(s) and clear saved storage?`)) return;
+      editorCues = [];
+      resetEditorForm();
+      renderEditorCues();
+      updateVttAnnotation();
+      saveEditorCues();
+      setEditorStatus("All cues cleared.");
     });
     vttEditor.querySelector('[data-export="copy"]').addEventListener("click", async () => {
       try {
@@ -298,6 +348,14 @@
       setEditorStatus("annotations.vtt downloaded.");
     });
     document.body.append(vttEditor);
+
+    const restored = loadPersistedCues();
+    if (restored.length) {
+      editorCues = restored.map((cue) => ({ id: nextCueId++, ...cue }));
+      renderEditorCues();
+      updateVttAnnotation();
+      setEditorStatus(`Restored ${restored.length} cue${restored.length === 1 ? "" : "s"} from this browser's storage.`);
+    }
   }
 
   function updatePreview(progress, targetTime, activeCaption) {

@@ -16,6 +16,18 @@ Fields:
 
 ## Items
 
+### T-049.11 - Persist the in-page WebVTT editor's cues across reloads
+- status: `done`
+- goal: keep the T-049.9 in-page cue editor's cue list across page reloads/navigation using `localStorage`, so authored/imported cues aren't lost on refresh, without adding a backend, account, or upload
+- source: `T-049 standing criterion; Sebas 2026-07-27`
+- workspace: `/home/sebas/work/projects/sport-frames`
+- next_step:
+  - select the next narrow live-annotation improvement
+- notes:
+  - completed: `?vtt-editor` now auto-saves `editorCues` (start/end/text only, ids stripped) to `localStorage["sport-frames:vtt-editor-cues"]` (`saveEditorCues`) after every add/update/delete/import, and restores + validates them (`loadPersistedCues`: rejects non-array/corrupt JSON and any cue with a non-finite/negative start, `end<=start`, or blank/missing text) on `setupVttEditor` init; a new "Clear all cues" toolbar button (native `confirm()`) wipes both the in-memory list and the saved storage, since refresh no longer resets state the way it used to; `setItem` failures (quota/unavailable storage, e.g. private browsing) are caught and surfaced via the existing status line without breaking in-memory editing; the pre-existing uncommitted `VTT_EDITOR_STORAGE_KEY` constant (added in a prior slice, unused until now) is what this wires up
+  - verified 2026-07-27: `node --check script.js`; `git diff --check`; extracted `loadPersistedCues`/`saveEditorCues` verbatim from the shipped `script.js` via a small Node harness with a mocked `localStorage` and confirmed: empty storage returns `[]`; save-then-load round-trips start/end/text (ids not persisted); corrupt JSON and non-array JSON both fall back to `[]`; a mixed batch of invalid cues (end<=start, negative start, empty/whitespace-only/missing text) is filtered down to only the valid entry; a throwing `setItem` (quota/unavailable) is caught and surfaces the "local storage is unavailable" status without throwing. Full in-page browser exercise (actual reload persistence, Clear-all confirm dialog) not run: this repo's headless Chromium is known-broken in this environment (`Page.navigate` hangs even on a trivial local page, per T-049.10's note) — logic verified at the function level instead
+- tags: [project:sport-frames, type:vtt-editor-local-persistence, criterion:live-annotations]
+
 ### T-049.10 - Import WebVTT cues into the in-page editor
 - status: `done`
 - goal: parse an existing `.vtt` file's cues directly into the T-049.9 in-page editor's cue list so cues from the FFmpeg suggestion tools (T-049.6/.7/.8) or any externally-authored WebVTT file can be reviewed, edited, retimed, deleted, and re-exported instead of only played back passively
