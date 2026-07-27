@@ -227,3 +227,29 @@ or service is needed.
 | Native in-page state + Clipboard/Blob download | Covers complete local authoring/export with zero dependency | Selected |
 | External VTT editor | Mature, but breaks the requested against-live-scrub in-page workflow | Reject for this slice |
 | Persistent browser storage | Could survive reloads, but adds migration/stale-video identity concerns without a requirement | Defer |
+
+## T-049.10: import WebVTT cues into the in-page editor
+
+### Decision
+
+Close the interop gap between the FFmpeg suggestion tools (T-049.6/.7/.8), the local WebVTT
+import (T-049.5), and the T-049.9 in-page editor: those cues could only be played back
+passively, never edited/retimed/deleted/re-exported.
+
+- The `?vtt-editor` panel gained an "Import .vtt" file input. A small native WebVTT cue-block
+  parser (`parseVttCues`/`parseVttTimestamp` in `script.js`) reads standard `HH:MM:SS.mmm`/
+  `MM:SS.mmm` timing lines, ignoring the `WEBVTT` header, `NOTE` blocks, cue identifiers, and
+  trailing cue settings, and appends the parsed cues into the existing in-memory `editorCues`
+  list.
+- Imported cues are immediately editable/retimeable/deletable/exportable through the same
+  controls as manually authored cues; no separate import-review UI.
+- No parser library, backend, persistence, or account. WebVTT stays the interchange format
+  already used across every earlier T-049.x slice.
+
+### Options considered
+
+| Approach | Fit | Decision |
+| --- | --- | --- |
+| Small native WebVTT cue-block parser + append to `editorCues` | Reuses the standard cue-timing syntax already used by every prior slice; zero dependency | Selected |
+| External WebVTT parser library | More complete (styling/regions), but this project's cue subset doesn't need it | Reject |
+| Auto-import default/loaded track into the editor on open | Removes a click, but silently mixes playback and authoring state without an explicit action | Reject |

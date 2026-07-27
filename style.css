@@ -199,6 +199,18 @@ html, body {
   gap: 0.5rem;
 }
 
+.vtt-editor__toolbar { flex-wrap: wrap; }
+
+.vtt-editor__import {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.vtt-editor__import input { width: auto; padding: 0; border: 0; }
+
 .vtt-editor form {
   display: grid;
   grid-template-columns: 1fr auto;

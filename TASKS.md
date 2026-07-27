@@ -16,6 +16,18 @@ Fields:
 
 ## Items
 
+### T-049.10 - Import WebVTT cues into the in-page editor
+- status: `done`
+- goal: parse an existing `.vtt` file's cues directly into the T-049.9 in-page editor's cue list so cues from the FFmpeg suggestion tools (T-049.6/.7/.8) or any externally-authored WebVTT file can be reviewed, edited, retimed, deleted, and re-exported instead of only played back passively
+- source: `T-049 standing criterion; Sebas 2026-07-27`
+- workspace: `/home/sebas/work/projects/sport-frames`
+- next_step:
+  - select the next narrow live-annotation improvement
+- notes:
+  - completed: `?vtt-editor` panel gained an "Import .vtt" file input; a small native WebVTT cue-block parser (`parseVttCues`/`parseVttTimestamp` in `script.js`) reads `HH:MM:SS.mmm`/`MM:SS.mmm` timing lines, ignores the `WEBVTT` header, `NOTE` blocks, cue identifiers, and trailing cue settings, and appends valid cues into the existing in-memory `editorCues` list for edit/retime/delete/export; no parser library, backend, persistence, or account
+  - verified 2026-07-27: `node --check script.js`; `git diff --check`; extracted the shipped `parseVttCues`/`parseVttTimestamp` source verbatim from `script.js` and ran it in Node against the real checked-in `assets/default.vtt` (all 3 cues parsed with exact start/end/text matching the T-049.3-documented timings) and a real FFmpeg `tools/suggest-black-vtt.sh` output for a synthetic black-frame MP4 (`ffmpeg`-generated, `blackdetect`), which parsed to the expected single `TODO: review black-video interval` cue at `0.000-2.000s`; edge cases (`NOTE`-only file, header-only file, `end<=start`, `MM:SS.mmm` short form with trailing cue settings, cue identifier + multi-line text) all matched expected pass/reject behavior; real static HTTP server returned `200 text/html` for `/` and `200 text/vtt` for `/assets/default.vtt`, and the served `/script.js` contains the new `parseVttCues`/`data-import` code. Full in-page browser exercise (file-input change event, click-to-import, clipboard round-trip) was attempted via headless Chromium but abandoned: `Page.navigate` hung indefinitely and reproducibly on this ARM/Raspberry-Pi Chromium build even navigating to a trivial local plain-HTML page on a completely fresh instance (tried `--headless=new` and legacy `--headless`, with and without sandbox) - a pre-existing environment limitation, not a defect in this change
+- tags: [project:sport-frames, type:vtt-editor-import, criterion:live-annotations]
+
 ### T-049.9 - In-page WebVTT cue editor
 - status: `done`
 - goal: author, edit, retime, delete, preview, copy, and download a sorted WebVTT cue list against the live scrub position

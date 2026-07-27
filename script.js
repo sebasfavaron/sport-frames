@@ -118,6 +118,38 @@
     return `WEBVTT\n\n${body}${body ? "\n" : ""}`;
   }
 
+  function parseVttTimestamp(raw) {
+    const match = /^(?:(\d+):)?(\d{2}):(\d{2})\.(\d{3})$/.exec(raw.trim());
+    if (!match) return null;
+    const [, hours, minutes, seconds, millis] = match;
+    return Number(hours || 0) * 3600 + Number(minutes) * 60 + Number(seconds) + Number(millis) / 1000;
+  }
+
+  function parseVttCues(text) {
+    const lines = text.replace(/^﻿/, "").replace(/\r\n/g, "\n").split("\n");
+    const cues = [];
+    let i = 0;
+    while (i < lines.length) {
+      const arrowIndex = lines[i].indexOf("-->");
+      if (arrowIndex === -1) {
+        i++;
+        continue;
+      }
+      const start = parseVttTimestamp(lines[i].slice(0, arrowIndex));
+      const end = parseVttTimestamp(lines[i].slice(arrowIndex + 3).trim().split(/\s+/)[0] || "");
+      i++;
+      const textLines = [];
+      while (i < lines.length && lines[i].trim() !== "") {
+        textLines.push(lines[i]);
+        i++;
+      }
+      if (Number.isFinite(start) && Number.isFinite(end) && end > start && textLines.length) {
+        cues.push({ start, end, text: textLines.join("\n").trim() });
+      }
+    }
+    return cues;
+  }
+
   function currentScrubTime() {
     return Number.isFinite(video.duration) ? scrollProgress() * video.duration : 0;
   }
@@ -170,7 +202,12 @@
         <label class="vtt-editor__text">Cue text<textarea name="text" rows="2" required></textarea></label>
         <div class="vtt-editor__form-actions"><button class="vtt-editor__save" type="submit">Add cue</button><button class="vtt-editor__cancel" type="button" hidden>Cancel edit</button></div>
       </form>
-      <div class="vtt-editor__toolbar"><span class="vtt-editor__count">0 cues</span><button type="button" data-export="copy">Copy VTT</button><button type="button" data-export="download">Download .vtt</button></div>
+      <div class="vtt-editor__toolbar">
+        <span class="vtt-editor__count">0 cues</span>
+        <label class="vtt-editor__import">Import .vtt<input type="file" accept="text/vtt,.vtt" data-import></label>
+        <button type="button" data-export="copy">Copy VTT</button>
+        <button type="button" data-export="download">Download .vtt</button>
+      </div>
       <ol class="vtt-editor__list"></ol>
       <span class="vtt-editor__status" aria-live="polite">In-memory only.</span>`;
 
@@ -222,6 +259,26 @@
       form.elements.text.value = cue.text;
       vttEditor.querySelector(".vtt-editor__save").textContent = "Update cue";
       vttEditor.querySelector(".vtt-editor__cancel").hidden = false;
+    });
+    vttEditor.querySelector("[data-import]").addEventListener("change", async (event) => {
+      const file = event.target.files && event.target.files[0];
+      event.target.value = "";
+      if (!file) return;
+      let parsed;
+      try {
+        parsed = parseVttCues(await file.text());
+      } catch {
+        setEditorStatus("Could not read file.");
+        return;
+      }
+      if (!parsed.length) {
+        setEditorStatus("No valid cues found in that file.");
+        return;
+      }
+      parsed.forEach((cue) => editorCues.push({ id: nextCueId++, ...cue }));
+      renderEditorCues();
+      updateVttAnnotation();
+      setEditorStatus(`Imported ${parsed.length} cue${parsed.length === 1 ? "" : "s"}.`);
     });
     vttEditor.querySelector('[data-export="copy"]').addEventListener("click", async () => {
       try {
