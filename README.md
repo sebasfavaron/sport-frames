@@ -96,30 +96,18 @@ autoría.
 
 ## Anotaciones temporizadas WebVTT
 
-El video default carga `assets/default.vtt` con el estándar nativo [WebVTT](https://www.w3.org/TR/webvtt1/).
-El browser activa el cue que corresponde a cada `currentTime` durante el scrub y la página lo dibuja
-arriba del video. Para otra secuencia permanente, reemplazá ese archivo por cues revisados:
-
-```vtt
-WEBVTT
-
-00:04.500 --> 00:09.500
-Seguimiento de la jugada
-```
-
-Es un formato interoperable con reproductores y editores que exportan VTT. Para probar un VTT
-existente contra el video actual (inclusive un video local), elegí el archivo en **Cargar anotaciones
-WebVTT para este video**: se carga temporalmente con la API nativa de archivos/`<track>`, sin subirlo
-ni guardarlo. Sin un VTT elegido, la capa default se desactiva para videos locales para no mostrar
-anotaciones de otro video.
+La página usa el estándar nativo [WebVTT](https://www.w3.org/TR/webvtt1/), pero no carga una pista
+de anotaciones de muestra. Para probar un VTT existente contra el video actual (inclusive un video
+local), elegí el archivo en **Cargar anotaciones WebVTT para este video**: se vuelve la pista activa
+temporalmente mediante las APIs nativas de archivos y `<track>`, sin subirlo ni guardarlo.
 
 ### Editor WebVTT en la página
 
-Abrí `/?vtt-editor` para autorizar cues contra el tiempo que estás scrubeando. **Use scrub time**
-captura el segundo visible como inicio o fin. La lista permite editar texto/timing, retimear con una
-nueva posición de scrub y eliminar cues. **Copy VTT** y **Download .vtt** generan el mismo archivo
-`WEBVTT`, siempre ordenado por inicio. El estado vive sólo en memoria: no hay cuenta, backend,
-subida ni dependencia externa.
+Usá **Abrir editor WebVTT** en la página (`/?vtt-editor` sigue abriéndolo directamente). **Use scrub
+time** captura el segundo visible como inicio o fin. La lista permite editar texto/timing, retimear
+y eliminar cues. **Apply to video** reemplaza la pista WebVTT activa con los cues actuales;
+**Download .vtt** guarda el mismo `WEBVTT`, siempre ordenado por inicio. Los cues persisten sólo en
+`localStorage` de ese browser: no hay cuenta, backend, subida ni dependencia externa.
 
 ## Desarrollo local
 

@@ -24,6 +24,7 @@
     <span>Cargar anotaciones WebVTT para este video</span>
     <input id="vtt-file-input" type="file" accept="text/vtt,.vtt" />
   </label>
+  <button id="vtt-editor-toggle" class="editor-toggle" type="button" aria-expanded="false">Abrir editor WebVTT</button>
   <p class="hint">↓ Scrolleá para empezar ↓</p>
 </header>
 
@@ -36,7 +37,7 @@
         playsinline
         preload="auto"
         src="assets/default.mp4">
-        <track id="scrolly-annotations" kind="metadata" src="assets/default.vtt" default />
+        <track id="scrolly-annotations" kind="metadata" />
       </video>
       <div id="scrolly-vtt-annotation" class="scrolly__vtt-annotation" aria-live="polite"></div>
       <div class="scrolly__progress"><div id="scrolly-progress-bar" class="scrolly__progress-bar"></div></div>

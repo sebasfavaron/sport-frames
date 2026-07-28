@@ -7,6 +7,7 @@
   const captions = Array.from(document.querySelectorAll(".scrolly__caption"));
   const fileInput = document.getElementById("file-input");
   const vttFileInput = document.getElementById("vtt-file-input");
+  const vttEditorToggle = document.getElementById("vtt-editor-toggle");
   const params = new URLSearchParams(window.location.search);
   const previewEnabled = params.has("annotation-preview");
   const vttCueEnabled = params.has("vtt-cue");
@@ -220,10 +221,9 @@
   }
 
   function setupVttEditor() {
-    if (!vttEditorEnabled) return;
-
     vttEditor = document.createElement("aside");
     vttEditor.className = "vtt-editor";
+    vttEditor.hidden = !vttEditorEnabled;
     vttEditor.setAttribute("aria-label", "WebVTT cue editor");
     vttEditor.innerHTML = `
       <header><strong>WebVTT cue editor</strong><span class="vtt-editor__live">00:00:00.000</span></header>
@@ -238,7 +238,7 @@
       <div class="vtt-editor__toolbar">
         <span class="vtt-editor__count">0 cues</span>
         <label class="vtt-editor__import">Import .vtt<input type="file" accept="text/vtt,.vtt" data-import></label>
-        <button type="button" data-export="copy">Copy VTT</button>
+        <button type="button" data-export="apply">Apply to video</button>
         <button type="button" data-export="download">Download .vtt</button>
         <button type="button" data-action="clear-all">Clear all cues</button>
       </div>
@@ -330,13 +330,10 @@
       saveEditorCues();
       setEditorStatus("All cues cleared.");
     });
-    vttEditor.querySelector('[data-export="copy"]').addEventListener("click", async () => {
-      try {
-        await navigator.clipboard.writeText(buildVtt());
-        setEditorStatus("WebVTT copied.");
-      } catch {
-        setEditorStatus("Clipboard unavailable; copy permission required.");
-      }
+    vttEditor.querySelector('[data-export="apply"]').addEventListener("click", () => {
+      replaceActiveAnnotationTrack(buildVtt());
+      updateVttAnnotation();
+      setEditorStatus(`Applied ${editorCues.length} cue${editorCues.length === 1 ? "" : "s"} to the video.`);
     });
     vttEditor.querySelector('[data-export="download"]').addEventListener("click", () => {
       const url = URL.createObjectURL(new Blob([buildVtt()], { type: "text/vtt" }));
@@ -348,6 +345,13 @@
       setEditorStatus("annotations.vtt downloaded.");
     });
     document.body.append(vttEditor);
+    vttEditorToggle.setAttribute("aria-expanded", String(!vttEditor.hidden));
+    vttEditorToggle.textContent = vttEditor.hidden ? "Abrir editor WebVTT" : "Cerrar editor WebVTT";
+    vttEditorToggle.addEventListener("click", () => {
+      vttEditor.hidden = !vttEditor.hidden;
+      vttEditorToggle.setAttribute("aria-expanded", String(!vttEditor.hidden));
+      vttEditorToggle.textContent = vttEditor.hidden ? "Abrir editor WebVTT" : "Cerrar editor WebVTT";
+    });
 
     const restored = loadPersistedCues();
     if (restored.length) {
@@ -431,14 +435,22 @@
     }
   }
 
+  function replaceActiveAnnotationTrack(vttText) {
+    if (annotationObjectUrl) URL.revokeObjectURL(annotationObjectUrl);
+    annotationObjectUrl = URL.createObjectURL(new Blob([vttText], { type: "text/vtt" }));
+    customAnnotationLoaded = true;
+    annotationTrack.track.mode = "disabled";
+    annotationTrack.src = annotationObjectUrl;
+    annotationTrack.track.mode = "hidden";
+    vttAnnotation.textContent = "";
+  }
+
   function loadVideoSource(src, { revoke } = {}) {
     if (revoke && objectUrl) {
       URL.revokeObjectURL(objectUrl);
       objectUrl = null;
     }
-    annotationTrack.track.mode = (src === "assets/default.mp4" || customAnnotationLoaded)
-      ? "hidden"
-      : "disabled";
+    annotationTrack.track.mode = customAnnotationLoaded ? "hidden" : "disabled";
     vttAnnotation.textContent = "";
     video.src = src;
     video.load();

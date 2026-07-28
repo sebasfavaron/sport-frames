@@ -58,6 +58,19 @@ html, body {
   color: var(--muted);
 }
 
+.editor-toggle {
+  display: block;
+  margin: 0 auto 1.5rem;
+  padding: 0.65rem 0.9rem;
+  color: var(--fg);
+  background: var(--accent);
+  border: 0;
+  border-radius: 6px;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
 .hint {
   font-size: 0.85rem;
   opacity: 0.7;
@@ -182,12 +195,14 @@ html, body {
   padding: 0.85rem;
   overflow: auto;
   color: var(--fg);
-  background: rgba(11, 11, 13, 0.96);
+  background: rgba(11, 11, 13, 0.82);
   border: 1px solid #3a3a3f;
   border-radius: 8px;
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.45);
   font-size: 0.8rem;
 }
+
+.vtt-editor[hidden] { display: none; }
 
 .vtt-editor header,
 .vtt-editor__toolbar,
@@ -256,8 +271,11 @@ html, body {
 .vtt-editor__list {
   display: grid;
   gap: 0.4rem;
+  max-height: min(16rem, 32vh);
   margin: 0;
   padding-left: 1.5rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .vtt-editor__list li { padding-left: 0.2rem; }

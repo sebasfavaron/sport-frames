@@ -16,6 +16,18 @@ Fields:
 
 ## Items
 
+### T-049.12 - VTT editor discoverability, non-occluding layout, apply-as-active export, drop default.vtt
+- status: `done`
+- goal: address explicit live-usage feedback on the T-049.9/.10/.11 in-page WebVTT editor: (1) make the editor reachable via an in-page button instead of only the `?vtt-editor` query param, (2) keep the editor from covering the video by making the cue list scroll within a bounded height and giving the panel some transparency, (3) change the export flow so it replaces the video's currently active `.vtt` instead of only offering a clipboard-style copy, and (4) stop auto-loading `assets/default.vtt` as a canned default annotation track
+- source: `T-049 explicit user feedback; Sebas 2026-07-27 (verbatim, see resolved mailbox entry for full text)`
+- workspace: `/home/sebas/work/projects/sport-frames`
+- next_step:
+  - select the next narrow live-annotation improvement
+- notes:
+  - completed: (1) the always-visible **Abrir editor WebVTT** button now opens/closes the editor while `?vtt-editor` remains a direct-open shortcut; (2) the cue list has its own bounded `min(16rem, 32vh)` vertical scroll area and the fixed panel background is reduced to `rgba(11, 11, 13, 0.82)`; (3) clipboard-only **Copy VTT** became **Apply to video**, which builds a native VTT Blob, revokes the prior annotation object URL, and replaces/enables the video's metadata track (download remains available); (4) the HTML track has no `assets/default.vtt` source/default flag and default-video loading no longer enables a canned track. README updated to match. LocalStorage persistence and the zero-backend/zero-dependency model remain unchanged
+  - verified 2026-07-28: no repo test/QA harness exists; `node --check script.js`; `git diff --check`; real static HTTP server returned `200`; source/DOM/CSS assertions confirmed the in-page toggle wiring, hidden-state override, bounded scroll, translucent panel, apply-not-copy control, absent track `src`, and absent default-video activation branch; an extracted `replaceActiveAnnotationTrack` harness with mocked URL/track state confirmed old URL revocation, Blob-backed `src` replacement, hidden-mode activation, custom-track state, stale annotation clearing, and exact generated VTT Blob payload. Full browser interaction was attempted with local headless Chromium but `Page.navigate` again hung until timeout with zero DOM output, matching the environment limitation recorded in T-049.10/.11
+- tags: [project:sport-frames, type:vtt-editor-ux-and-default-removal, criterion:live-annotations]
+
 ### T-049.11 - Persist the in-page WebVTT editor's cues across reloads
 - status: `done`
 - goal: keep the T-049.9 in-page cue editor's cue list across page reloads/navigation using `localStorage`, so authored/imported cues aren't lost on refresh, without adding a backend, account, or upload
