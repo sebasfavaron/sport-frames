@@ -16,6 +16,18 @@ Fields:
 
 ## Items
 
+### T-049.13 - Keyboard mark-in/mark-out in the WebVTT cue editor
+- status: `done`
+- goal: let a reviewer capture the current live scrub time into the editor's start/end fields with standard `I`/`O` keys, without leaving the video to click either timing button
+- source: `T-049 standing criterion; Sebas 2026-07-30`
+- workspace: `/home/sebas/work/projects/sport-frames`
+- next_step:
+  - select the next narrow live-annotation improvement
+- notes:
+  - completed: with the editor open, unmodified `I` writes the current scrub time to Start and `O` writes it to End through the same timing path as the existing buttons; the panel shows the key map and reports the captured timestamp. Shortcuts are disabled while the editor is hidden, while typing in an input/textarea/select/contenteditable target, on key repeat, and with Alt/Ctrl/Meta, so cue text and browser/OS shortcuts remain untouched. No playback controls, global shortcut system, backend, dependency, or framework
+  - verified 2026-07-30: `node --check script.js`; `bash -n tools/*.sh`; `git diff --check`; a Node harness extracted the shipped `vttShortcutField` verbatim and proved case-insensitive `I`→start / `O`→end plus unrelated-key, editable-target, repeat, and modifier guards, then asserted hidden-editor and `setFormTime` listener wiring; a real static server returned `200` for `/?vtt-editor` and `/script.js`, serving the new shortcut code; `ffprobe` read the real `assets/default.mp4` duration as `14.666667s`. Full headless Chromium interaction was attempted, but this Pi's Chromium again failed before page load (`unrecognized flag --no-decommit-pooled-pages` child errors), consistent with T-049.10-.12's recorded environment limitation
+- tags: [project:sport-frames, type:vtt-editor-keyboard-mark-in-out, criterion:live-annotations]
+
 ### T-049.12 - VTT editor discoverability, non-occluding layout, apply-as-active export, drop default.vtt
 - status: `done`
 - goal: address explicit live-usage feedback on the T-049.9/.10/.11 in-page WebVTT editor: (1) make the editor reachable via an in-page button instead of only the `?vtt-editor` query param, (2) keep the editor from covering the video by making the cue list scroll within a bounded height and giving the panel some transparency, (3) change the export flow so it replaces the video's currently active `.vtt` instead of only offering a clipboard-style copy, and (4) stop auto-loading `assets/default.vtt` as a canned default annotation track

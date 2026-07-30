@@ -266,7 +266,17 @@ html, body {
 .vtt-editor__form-actions { justify-content: flex-start; }
 .vtt-editor__live,
 .vtt-editor__status,
-.vtt-editor__count { color: var(--muted); }
+.vtt-editor__count,
+.vtt-editor__shortcuts { color: var(--muted); }
+
+.vtt-editor__shortcuts kbd {
+  padding: 0.1rem 0.3rem;
+  color: var(--fg);
+  background: #303036;
+  border: 1px solid #4a4a50;
+  border-radius: 3px;
+  font: inherit;
+}
 
 .vtt-editor__list {
   display: grid;

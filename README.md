@@ -104,8 +104,9 @@ temporalmente mediante las APIs nativas de archivos y `<track>`, sin subirlo ni 
 ### Editor WebVTT en la página
 
 Usá **Abrir editor WebVTT** en la página (`/?vtt-editor` sigue abriéndolo directamente). **Use scrub
-time** captura el segundo visible como inicio o fin. La lista permite editar texto/timing, retimear
-y eliminar cues. **Apply to video** reemplaza la pista WebVTT activa con los cues actuales;
+time** captura el segundo visible como inicio o fin; con el editor abierto, `I` marca el inicio y `O`
+marca el fin sin sacar el foco del video (los atajos no actúan al escribir en un campo). La lista
+permite editar texto/timing, retimear y eliminar cues. **Apply to video** reemplaza la pista WebVTT activa con los cues actuales;
 **Download .vtt** guarda el mismo `WEBVTT`, siempre ordenado por inicio. Los cues persisten sólo en
 `localStorage` de ese browser: no hay cuenta, backend, subida ni dependencia externa.
 

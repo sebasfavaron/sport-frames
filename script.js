@@ -156,6 +156,13 @@
     return Number.isFinite(video.duration) ? scrollProgress() * video.duration : 0;
   }
 
+  function vttShortcutField(event) {
+    if (event.repeat || event.altKey || event.ctrlKey || event.metaKey) return null;
+    const target = event.target;
+    if (target instanceof HTMLElement && (target.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName))) return null;
+    return event.key.toLowerCase() === "i" ? "start" : event.key.toLowerCase() === "o" ? "end" : null;
+  }
+
   function setEditorStatus(message) {
     if (vttEditor) vttEditor.querySelector(".vtt-editor__status").textContent = message;
   }
@@ -227,6 +234,7 @@
     vttEditor.setAttribute("aria-label", "WebVTT cue editor");
     vttEditor.innerHTML = `
       <header><strong>WebVTT cue editor</strong><span class="vtt-editor__live">00:00:00.000</span></header>
+      <span class="vtt-editor__shortcuts"><kbd>I</kbd> mark in · <kbd>O</kbd> mark out</span>
       <form>
         <label>Start (seconds)<input name="start" type="number" min="0" step="0.001" required></label>
         <button type="button" data-set-time="start">Use scrub time</button>
@@ -246,10 +254,20 @@
       <span class="vtt-editor__status" aria-live="polite">Saved to this browser only.</span>`;
 
     const form = vttEditor.querySelector("form");
+    const setFormTime = (field) => {
+      const time = currentScrubTime().toFixed(3);
+      form.elements[field].value = time;
+      setEditorStatus(`${field === "start" ? "Mark in" : "Mark out"} set at ${vttTimestamp(Number(time))}.`);
+    };
     vttEditor.querySelectorAll("[data-set-time]").forEach((button) => {
-      button.addEventListener("click", () => {
-        form.elements[button.dataset.setTime].value = currentScrubTime().toFixed(3);
-      });
+      button.addEventListener("click", () => setFormTime(button.dataset.setTime));
+    });
+    document.addEventListener("keydown", (event) => {
+      if (vttEditor.hidden) return;
+      const field = vttShortcutField(event);
+      if (!field) return;
+      event.preventDefault();
+      setFormTime(field);
     });
     form.addEventListener("submit", (event) => {
       event.preventDefault();
