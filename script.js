@@ -156,6 +156,17 @@
     return Number.isFinite(video.duration) ? scrollProgress() * video.duration : 0;
   }
 
+  function scrollToVideoTime(seconds) {
+    if (!Number.isFinite(video.duration) || video.duration <= 0) return false;
+    const progress = clamp(seconds / video.duration, 0, 1);
+    const rect = track.getBoundingClientRect();
+    const trackTop = window.scrollY + rect.top;
+    const scrollable = Math.max(0, rect.height - window.innerHeight);
+    window.scrollTo({ top: trackTop + progress * scrollable, behavior: "auto" });
+    onScroll();
+    return true;
+  }
+
   function vttShortcutField(event) {
     if (event.repeat || event.altKey || event.ctrlKey || event.metaKey) return null;
     const target = event.target;
@@ -220,7 +231,7 @@
         summary.textContent = `${vttTimestamp(cue.start)} → ${vttTimestamp(cue.end)}  ${cue.text}`;
         const actions = document.createElement("span");
         actions.className = "vtt-editor__item-actions";
-        actions.innerHTML = `<button type="button" data-action="edit">Edit</button><button type="button" data-action="delete">Delete</button>`;
+        actions.innerHTML = `<button type="button" data-action="go-to">Go to start</button><button type="button" data-action="edit">Edit</button><button type="button" data-action="delete">Delete</button>`;
         item.append(summary, actions);
         list.append(item);
       });
@@ -297,6 +308,15 @@
       const item = event.target.closest("li");
       if (!button || !item) return;
       const id = Number(item.dataset.cueId);
+      const cue = editorCues.find((candidate) => candidate.id === id);
+      if (button.dataset.action === "go-to") {
+        setEditorStatus(
+          scrollToVideoTime(cue.start)
+            ? `Moved to cue start at ${vttTimestamp(cue.start)}.`
+            : "Video timing is not ready yet."
+        );
+        return;
+      }
       if (button.dataset.action === "delete") {
         editorCues = editorCues.filter((cue) => cue.id !== id);
         if (editingCueId === id) resetEditorForm();
@@ -306,7 +326,6 @@
         setEditorStatus("Cue deleted.");
         return;
       }
-      const cue = editorCues.find((candidate) => candidate.id === id);
       editingCueId = id;
       form.elements.start.value = cue.start.toFixed(3);
       form.elements.end.value = cue.end.toFixed(3);

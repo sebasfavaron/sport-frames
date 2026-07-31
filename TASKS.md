@@ -16,6 +16,18 @@ Fields:
 
 ## Items
 
+### T-049.14 - Jump from a WebVTT cue to its live video position
+- status: `done`
+- goal: let a reviewer jump the scroll-scrubbed video directly to a cue's start from the editor list, so checking or retiming a cue does not require manually finding it again
+- source: `T-049 standing criterion; Sebas 2026-07-31`
+- workspace: `/home/sebas/work/projects/sport-frames`
+- next_step:
+  - select the next narrow live-annotation improvement
+- notes:
+  - completed: every editor cue now has a native **Go to start** action that maps its start timestamp onto the existing scroll-scrub track, scrolls there, requests the normal render path, and reports the selected WebVTT timestamp. Invalid/unloaded video timing is rejected without scrolling. No playback controls, timeline, backend, dependency, framework, or new persistence
+  - verified 2026-07-31: `node --check script.js`; `git diff --check`; a Node harness extracted the shipped `scrollToVideoTime` verbatim and proved exact 25% cue-time-to-scroll mapping, duration-end clamping, normal render request, and the not-ready guard, then asserted list-action wiring; a real static server returned the editor page and shipped **Go to start** code; `ffprobe` read the real `assets/default.mp4` duration as `14.666667s`
+- tags: [project:sport-frames, type:vtt-editor-cue-start-navigation, criterion:live-annotations]
+
 ### T-049.13 - Keyboard mark-in/mark-out in the WebVTT cue editor
 - status: `done`
 - goal: let a reviewer capture the current live scrub time into the editor's start/end fields with standard `I`/`O` keys, without leaving the video to click either timing button
