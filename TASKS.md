@@ -16,6 +16,18 @@ Fields:
 
 ## Items
 
+### T-049.15 - Warn about overlapping WebVTT cues
+- status: `done`
+- goal: flag overlapping cue timings in the editor so a reviewer can catch accidental simultaneous annotations before applying or downloading the WebVTT file
+- source: `T-049 standing criterion; Sebas 2026-08-02`
+- workspace: `/home/sebas/work/projects/sport-frames`
+- next_step:
+  - select the next narrow live-annotation improvement
+- notes:
+  - completed: the editor now detects every pair of cues whose time ranges intersect, marks each involved cue with an amber **Overlaps another cue** warning, and reports the total number of overlapping pairs in the toolbar. Cues that only touch at an end/start boundary are not flagged. Detection refreshes through the existing render path after add, edit, delete, import, clear, and restore; overlaps remain valid/exportable because WebVTT permits them. No auto-retiming, blocked export, backend, dependency, framework, or new persistence
+  - verified 2026-08-02: `node --check script.js`; `node tools/verify-overlap-warning.js`; `git diff --check`; the Node harness extracts the shipped `findCueOverlaps` verbatim and proves empty/non-overlapping input, touching boundaries, unsorted overlap, one-to-many overlap, and all-pair overlap counts, then asserts per-cue marker and accessible aggregate-warning wiring; a real static server returned the editor page, overlap detector code, and warning styles
+- tags: [project:sport-frames, type:vtt-editor-overlap-warning, criterion:live-annotations]
+
 ### T-049.14 - Jump from a WebVTT cue to its live video position
 - status: `done`
 - goal: let a reviewer jump the scroll-scrubbed video directly to a cue's start from the editor list, so checking or retiming a cue does not require manually finding it again

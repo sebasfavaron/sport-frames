@@ -152,6 +152,22 @@
     return cues;
   }
 
+  function findCueOverlaps(cues) {
+    const sorted = [...cues].sort((a, b) => a.start - b.start || a.end - b.end || a.id - b.id);
+    const cueIds = new Set();
+    let pairCount = 0;
+    sorted.forEach((cue, index) => {
+      for (let nextIndex = index + 1; nextIndex < sorted.length; nextIndex++) {
+        const next = sorted[nextIndex];
+        if (next.start >= cue.end) break;
+        cueIds.add(cue.id);
+        cueIds.add(next.id);
+        pairCount++;
+      }
+    });
+    return { cueIds, pairCount };
+  }
+
   function currentScrubTime() {
     return Number.isFinite(video.duration) ? scrollProgress() * video.duration : 0;
   }
@@ -221,6 +237,7 @@
   function renderEditorCues() {
     if (!vttEditor) return;
     const list = vttEditor.querySelector(".vtt-editor__list");
+    const overlaps = findCueOverlaps(editorCues);
     list.replaceChildren();
     [...editorCues]
       .sort((a, b) => a.start - b.start || a.end - b.end || a.id - b.id)
@@ -229,6 +246,13 @@
         item.dataset.cueId = String(cue.id);
         const summary = document.createElement("span");
         summary.textContent = `${vttTimestamp(cue.start)} → ${vttTimestamp(cue.end)}  ${cue.text}`;
+        if (overlaps.cueIds.has(cue.id)) {
+          item.classList.add("is-overlapping");
+          const warning = document.createElement("strong");
+          warning.className = "vtt-editor__overlap-label";
+          warning.textContent = "Overlaps another cue";
+          summary.append(" ", warning);
+        }
         const actions = document.createElement("span");
         actions.className = "vtt-editor__item-actions";
         actions.innerHTML = `<button type="button" data-action="go-to">Go to start</button><button type="button" data-action="edit">Edit</button><button type="button" data-action="delete">Delete</button>`;
@@ -236,6 +260,11 @@
         list.append(item);
       });
     vttEditor.querySelector(".vtt-editor__count").textContent = `${editorCues.length} cue${editorCues.length === 1 ? "" : "s"}`;
+    const warning = vttEditor.querySelector(".vtt-editor__overlap-warning");
+    warning.hidden = overlaps.pairCount === 0;
+    warning.textContent = overlaps.pairCount === 1
+      ? "Warning: 1 overlapping cue pair."
+      : `Warning: ${overlaps.pairCount} overlapping cue pairs.`;
   }
 
   function setupVttEditor() {
@@ -256,6 +285,7 @@
       </form>
       <div class="vtt-editor__toolbar">
         <span class="vtt-editor__count">0 cues</span>
+        <strong class="vtt-editor__overlap-warning" role="status" hidden></strong>
         <label class="vtt-editor__import">Import .vtt<input type="file" accept="text/vtt,.vtt" data-import></label>
         <button type="button" data-export="apply">Apply to video</button>
         <button type="button" data-export="download">Download .vtt</button>
