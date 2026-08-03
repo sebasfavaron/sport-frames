@@ -168,6 +168,11 @@
     return { cueIds, pairCount };
   }
 
+  function findCuesPastVideoEnd(cues, duration) {
+    if (!Number.isFinite(duration)) return new Set();
+    return new Set(cues.filter((cue) => cue.start > duration || cue.end > duration).map((cue) => cue.id));
+  }
+
   function currentScrubTime() {
     return Number.isFinite(video.duration) ? scrollProgress() * video.duration : 0;
   }
@@ -238,6 +243,7 @@
     if (!vttEditor) return;
     const list = vttEditor.querySelector(".vtt-editor__list");
     const overlaps = findCueOverlaps(editorCues);
+    const pastVideoEnd = findCuesPastVideoEnd(editorCues, video.duration);
     list.replaceChildren();
     [...editorCues]
       .sort((a, b) => a.start - b.start || a.end - b.end || a.id - b.id)
@@ -253,6 +259,13 @@
           warning.textContent = "Overlaps another cue";
           summary.append(" ", warning);
         }
+        if (pastVideoEnd.has(cue.id)) {
+          item.classList.add("is-past-video-end");
+          const warning = document.createElement("strong");
+          warning.className = "vtt-editor__duration-label";
+          warning.textContent = "Extends past video end";
+          summary.append(" ", warning);
+        }
         const actions = document.createElement("span");
         actions.className = "vtt-editor__item-actions";
         actions.innerHTML = `<button type="button" data-action="go-to">Go to start</button><button type="button" data-action="edit">Edit</button><button type="button" data-action="delete">Delete</button>`;
@@ -265,6 +278,11 @@
     warning.textContent = overlaps.pairCount === 1
       ? "Warning: 1 overlapping cue pair."
       : `Warning: ${overlaps.pairCount} overlapping cue pairs.`;
+    const durationWarning = vttEditor.querySelector(".vtt-editor__duration-warning");
+    durationWarning.hidden = pastVideoEnd.size === 0;
+    durationWarning.textContent = pastVideoEnd.size === 1
+      ? "Warning: 1 cue extends past video end."
+      : `Warning: ${pastVideoEnd.size} cues extend past video end.`;
   }
 
   function setupVttEditor() {
@@ -286,6 +304,7 @@
       <div class="vtt-editor__toolbar">
         <span class="vtt-editor__count">0 cues</span>
         <strong class="vtt-editor__overlap-warning" role="status" hidden></strong>
+        <strong class="vtt-editor__duration-warning" role="status" hidden></strong>
         <label class="vtt-editor__import">Import .vtt<input type="file" accept="text/vtt,.vtt" data-import></label>
         <button type="button" data-export="apply">Apply to video</button>
         <button type="button" data-export="download">Download .vtt</button>
@@ -532,6 +551,7 @@
     );
   }
 
+  video.addEventListener("durationchange", renderEditorCues);
   annotationTrack.track.mode = "hidden";
   annotationTrack.track.addEventListener("cuechange", updateVttAnnotation);
   setupPreview();

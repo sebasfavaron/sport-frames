@@ -253,3 +253,14 @@ passively, never edited/retimed/deleted/re-exported.
 | Small native WebVTT cue-block parser + append to `editorCues` | Reuses the standard cue-timing syntax already used by every prior slice; zero dependency | Selected |
 | External WebVTT parser library | More complete (styling/regions), but this project's cue subset doesn't need it | Reject |
 | Auto-import default/loaded track into the editor on open | Removes a click, but silently mixes playback and authoring state without an explicit action | Reject |
+
+## T-049.16: warn about cues beyond video duration
+
+### Decision
+
+When the loaded video exposes a finite duration, mark every editor cue whose start or end exceeds it.
+
+- Each affected list item shows **Extends past video end**; the toolbar reports the affected count.
+- Detection runs through the normal render path after authoring, editing, import, restore, and video duration changes.
+- The warning is advisory only. Saving, applying, and downloading remain allowed because WebVTT permits such timings.
+- Unknown/`NaN` video duration produces no warning. No backend, account, upload, dependency, framework, or new persistence.

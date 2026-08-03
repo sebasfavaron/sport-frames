@@ -290,15 +290,20 @@ html, body {
 
 .vtt-editor__list li { padding-left: 0.2rem; }
 .vtt-editor__list li > span:first-child { display: block; overflow-wrap: anywhere; }
-.vtt-editor__list li.is-overlapping {
+.vtt-editor__list li.is-overlapping,
+.vtt-editor__list li.is-past-video-end {
   padding: 0.35rem;
   border-left: 3px solid #ffb020;
   background: rgba(255, 176, 32, 0.12);
 }
 .vtt-editor__overlap-warning,
-.vtt-editor__overlap-label { color: #ffca6a; }
-.vtt-editor__overlap-warning { flex-basis: 100%; }
-.vtt-editor__overlap-label { font-size: 0.72rem; }
+.vtt-editor__overlap-label,
+.vtt-editor__duration-warning,
+.vtt-editor__duration-label { color: #ffca6a; }
+.vtt-editor__overlap-warning,
+.vtt-editor__duration-warning { flex-basis: 100%; }
+.vtt-editor__overlap-label,
+.vtt-editor__duration-label { font-size: 0.72rem; }
 .vtt-editor__item-actions { justify-content: flex-start; margin-top: 0.25rem; }
 
 .annotation-preview__active {

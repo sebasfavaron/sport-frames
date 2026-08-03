@@ -16,6 +16,18 @@ Fields:
 
 ## Items
 
+### T-049.16 - Warn about WebVTT cues beyond video duration
+- status: `done`
+- goal: flag editor cues whose start or end exceeds the loaded video's known duration so silently unreachable annotations are visible during review without blocking valid WebVTT export
+- source: `T-049 standing criterion; Sebas 2026-08-03`
+- workspace: `/home/sebas/work/projects/sport-frames`
+- next_step:
+  - select the next narrow live-annotation improvement
+- notes:
+  - completed: when `video.duration` is finite, the editor marks every cue whose start or end exceeds it with an amber **Extends past video end** label and reports the affected count in the toolbar. The normal render path covers add, edit, delete, import, clear, and restore; `durationchange` refreshes warnings when video metadata/source changes. Unknown/`NaN` duration yields no warning. Cues remain saveable, applicable, and downloadable; no backend, dependency, framework, upload, account, or new persistence
+  - verified 2026-08-03: `node --check script.js`; `node tools/verify-duration-bounds-warning.js`; existing overlap harness; `git diff --check`; the Node harness extracts shipped `findCuesPastVideoEnd` verbatim and proves unavailable/`NaN` duration, in-range cues, end past duration, start past duration, and exact-end validity, plus render/import/duration-change wiring; real static HTTP returned `200` for `/?vtt-editor` and `/script.js` with the detector present
+- tags: [project:sport-frames, type:vtt-editor-duration-bounds-warning, criterion:live-annotations]
+
 ### T-049.15 - Warn about overlapping WebVTT cues
 - status: `done`
 - goal: flag overlapping cue timings in the editor so a reviewer can catch accidental simultaneous annotations before applying or downloading the WebVTT file
