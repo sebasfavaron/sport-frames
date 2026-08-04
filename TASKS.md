@@ -16,6 +16,30 @@ Fields:
 
 ## Items
 
+### T-049.17 - Warn about empty WebVTT cue bodies
+- status: `done`
+- goal: flag editor cues whose text is empty, whitespace-only, or still the literal `TODO` placeholder so unfinished annotations remain visible during review without blocking save, apply, or download
+- source: `T-049 standing criterion; Sebas 2026-08-04`
+- workspace: `/home/sebas/work/projects/sport-frames`
+- next_step:
+  - select the next narrow live-annotation improvement
+- notes:
+  - completed: cues with empty/whitespace-only text or a trimmed body equal to literal `TODO` are marked with an amber **Needs annotation text** label and reported as an aggregate count in the toolbar, matching the overlap and duration-bounds warning pattern. The shared render path covers add, edit, delete, import, clear, and restore. Warnings are visual-only; save, apply, and download remain unblocked. No backend, dependency, framework, upload, account, or new persistence
+  - verified 2026-08-04: `node --check script.js`; `node tools/verify-empty-cue-body-warning.js`; existing overlap, duration-bounds, and short-cue harnesses; `git diff --check`; the Node harness extracts shipped `findEmptyCueBodies` verbatim and proves empty, whitespace-only, literal/trimmed `TODO`, normal text, non-literal `TODO: review`, and missing-text cases, then asserts per-cue and toolbar wiring; a real static HTTP server returned `200` for `/?vtt-editor` and `/script.js`, with the served script containing `findEmptyCueBodies`
+- tags: [project:sport-frames, type:vtt-editor-empty-cue-body-warning, criterion:live-annotations]
+
+### T-049.18 - Warn about suspiciously short WebVTT cues
+- status: `done`
+- goal: flag editor cues whose duration is below a plausible-caption floor so a mis-click or typo during entry (near-zero-length cue) is visible during review without blocking valid WebVTT export
+- source: `T-049 standing criterion; Sebas 2026-08-04`
+- workspace: `/home/sebas/work/projects/sport-frames`
+- next_step:
+  - select the next narrow live-annotation improvement
+- notes:
+  - completed: every cue whose `end - start` is below 150ms (`SHORT_CUE_THRESHOLD_SECONDS`) is marked with an amber **Very short cue** label and reported as an aggregate count in the toolbar, matching the overlap (T-049.15) and duration-bounds (T-049.16) warning pattern. The normal render path covers add, edit, delete, import, clear, and restore. Cues remain saveable, applicable, and downloadable; no backend, dependency, framework, upload, account, or new persistence
+  - verified 2026-08-04: `node --check script.js`; `node tools/verify-short-cue-warning.js`; existing overlap and duration-bounds harnesses unaffected; `git diff --check`; the Node harness extracts the shipped `findShortCues` verbatim and proves above-threshold, exactly-at-threshold, below-threshold, and zero-duration cases, plus a mixed-cue-set case, then asserts render/toolbar wiring; a real static HTTP server returned `200` for `/?vtt-editor` and `/script.js` with the detector code present
+- tags: [project:sport-frames, type:vtt-editor-short-cue-warning, criterion:live-annotations]
+
 ### T-049.16 - Warn about WebVTT cues beyond video duration
 - status: `done`
 - goal: flag editor cues whose start or end exceeds the loaded video's known duration so silently unreachable annotations are visible during review without blocking valid WebVTT export

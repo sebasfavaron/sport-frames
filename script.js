@@ -34,6 +34,7 @@
   let editingCueId = null;
   let nextCueId = 1;
   const VTT_EDITOR_STORAGE_KEY = "sport-frames:vtt-editor-cues";
+  const SHORT_CUE_THRESHOLD_SECONDS = 0.15;
 
   const clamp = (n, min, max) => Math.min(max, Math.max(min, n));
   const anchorHtml = (progress) =>
@@ -173,6 +174,14 @@
     return new Set(cues.filter((cue) => cue.start > duration || cue.end > duration).map((cue) => cue.id));
   }
 
+  function findShortCues(cues) {
+    return new Set(cues.filter((cue) => cue.end - cue.start < SHORT_CUE_THRESHOLD_SECONDS).map((cue) => cue.id));
+  }
+
+  function findEmptyCueBodies(cues) {
+    return new Set(cues.filter((cue) => typeof cue.text !== "string" || !cue.text.trim() || cue.text.trim() === "TODO").map((cue) => cue.id));
+  }
+
   function currentScrubTime() {
     return Number.isFinite(video.duration) ? scrollProgress() * video.duration : 0;
   }
@@ -244,6 +253,8 @@
     const list = vttEditor.querySelector(".vtt-editor__list");
     const overlaps = findCueOverlaps(editorCues);
     const pastVideoEnd = findCuesPastVideoEnd(editorCues, video.duration);
+    const shortCues = findShortCues(editorCues);
+    const emptyCueBodies = findEmptyCueBodies(editorCues);
     list.replaceChildren();
     [...editorCues]
       .sort((a, b) => a.start - b.start || a.end - b.end || a.id - b.id)
@@ -266,6 +277,20 @@
           warning.textContent = "Extends past video end";
           summary.append(" ", warning);
         }
+        if (shortCues.has(cue.id)) {
+          item.classList.add("is-short-cue");
+          const warning = document.createElement("strong");
+          warning.className = "vtt-editor__short-cue-label";
+          warning.textContent = "Very short cue";
+          summary.append(" ", warning);
+        }
+        if (emptyCueBodies.has(cue.id)) {
+          item.classList.add("has-empty-body");
+          const warning = document.createElement("strong");
+          warning.className = "vtt-editor__empty-body-label";
+          warning.textContent = "Needs annotation text";
+          summary.append(" ", warning);
+        }
         const actions = document.createElement("span");
         actions.className = "vtt-editor__item-actions";
         actions.innerHTML = `<button type="button" data-action="go-to">Go to start</button><button type="button" data-action="edit">Edit</button><button type="button" data-action="delete">Delete</button>`;
@@ -283,6 +308,16 @@
     durationWarning.textContent = pastVideoEnd.size === 1
       ? "Warning: 1 cue extends past video end."
       : `Warning: ${pastVideoEnd.size} cues extend past video end.`;
+    const shortCueWarning = vttEditor.querySelector(".vtt-editor__short-cue-warning");
+    shortCueWarning.hidden = shortCues.size === 0;
+    shortCueWarning.textContent = shortCues.size === 1
+      ? "Warning: 1 cue is very short."
+      : `Warning: ${shortCues.size} cues are very short.`;
+    const emptyBodyWarning = vttEditor.querySelector(".vtt-editor__empty-body-warning");
+    emptyBodyWarning.hidden = emptyCueBodies.size === 0;
+    emptyBodyWarning.textContent = emptyCueBodies.size === 1
+      ? "Warning: 1 cue needs annotation text."
+      : `Warning: ${emptyCueBodies.size} cues need annotation text.`;
   }
 
   function setupVttEditor() {
@@ -305,6 +340,8 @@
         <span class="vtt-editor__count">0 cues</span>
         <strong class="vtt-editor__overlap-warning" role="status" hidden></strong>
         <strong class="vtt-editor__duration-warning" role="status" hidden></strong>
+        <strong class="vtt-editor__short-cue-warning" role="status" hidden></strong>
+        <strong class="vtt-editor__empty-body-warning" role="status" hidden></strong>
         <label class="vtt-editor__import">Import .vtt<input type="file" accept="text/vtt,.vtt" data-import></label>
         <button type="button" data-export="apply">Apply to video</button>
         <button type="button" data-export="download">Download .vtt</button>
