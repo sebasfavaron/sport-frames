@@ -203,6 +203,34 @@ tools/suggest-black-vtt.sh my-play.mp4 0.10 0.5 > black-intervals.vtt
 | Browser frame-analysis UI | Needs decode, tuning controls and authoring state | Reject |
 | Sports CV/ASR service | Adds vendor/model/upload and does not specifically solve black-frame timing | Defer |
 
+## T-049.19: FFmpeg loud-peak-to-WebVTT cue suggestions
+
+### Decision
+
+Use FFmpeg's existing [`astats`](https://ffmpeg.org/ffmpeg-filters.html#astats) filter to draft
+portable WebVTT cues for sustained loud audio intervals.
+
+```bash
+tools/suggest-loudpeak-vtt.sh my-play.mp4 -18 0.5 > loud-intervals.vtt
+```
+
+- Argument 2 is the RMS threshold in dBFS (no greater than `0`); argument 3 is the minimum loud
+  interval in seconds. Audio is measured in 100ms windows. Tune both to the recording, then load
+  the generated VTT through the existing local WebVTT import.
+- Cues say `TODO: review loud/crowd-reaction interval`: a loud peak may be crowd reaction,
+  commentary, music, clipping, or noise, not proof of a sports highlight. Review/delete/replace
+  each suggestion in the existing local editor before use.
+- The helper requires an audio stream and emits standard WebVTT to stdout. It adds no runtime
+  dependency, browser/editor change, persistence, upload, account, or backend.
+
+### Options considered
+
+| Approach | Fit | Decision |
+| --- | --- | --- |
+| FFmpeg `astats` → WebVTT | Existing local tool; fixed-window RMS metadata gives directly parseable loud intervals | Selected |
+| FFmpeg `ebur128` | Better program-loudness metering, but its 400ms momentary window smears short interval boundaries | Reject for candidate timing |
+| Browser audio analysis or sports-event service | Adds runtime state or upload/vendor complexity; loudness still needs human review | Reject |
+
 ## T-049.9: in-page WebVTT cue editor
 
 ### Decision

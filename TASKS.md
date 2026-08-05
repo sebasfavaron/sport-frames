@@ -16,6 +16,18 @@ Fields:
 
 ## Items
 
+### T-049.19 - FFmpeg loud-peak-to-WebVTT cue suggestions
+- status: `done`
+- goal: generate review-only WebVTT cue candidates for sustained loud audio intervals using FFmpeg's existing `astats` filter, without browser changes, an authoring UI, storage layer, or backend
+- source: `T-049 standing criterion; Sebas 2026-08-05`
+- workspace: `/home/sebas/work/projects/sport-frames`
+- next_step:
+  - select the next narrow live-annotation improvement
+- notes:
+  - completed: `tools/suggest-loudpeak-vtt.sh` measures 100ms audio windows with FFmpeg `astats`, groups consecutive windows at or above a configurable dBFS RMS threshold, and converts qualifying sustained intervals into portable WebVTT cues saying `TODO: review loud/crowd-reaction interval`; no runtime dependency, browser/editor change, persistence, upload, account, or backend
+  - verified 2026-08-05: `bash -n`; real synthetic 3s MP4 with quiet/loud/quiet 1s sections emitted exactly `00:00:01.000 --> 00:00:02.000` at `-30dBFS`, matching independent `astats` output (~`-47.1/-21.1/-47.1dBFS`) and `ffprobe` duration; FFmpeg remux + `ffprobe` read the subtitle packet; invalid positive/nonnumeric threshold and zero/nonnumeric duration rejected; missing/no-audio input rejected; `node --check script.js`; `git diff --check`
+- tags: [project:sport-frames, type:ffmpeg-loudpeak-webvtt-suggestions, criterion:live-annotations]
+
 ### T-049.17 - Warn about empty WebVTT cue bodies
 - status: `done`
 - goal: flag editor cues whose text is empty, whitespace-only, or still the literal `TODO` placeholder so unfinished annotations remain visible during review without blocking save, apply, or download
