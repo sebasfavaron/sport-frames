@@ -291,6 +291,7 @@ html, body {
 .vtt-editor__list li { padding-left: 0.2rem; }
 .vtt-editor__list li > span:first-child { display: block; overflow-wrap: anywhere; }
 .vtt-editor__list li.is-overlapping,
+.vtt-editor__list li.is-near-duplicate,
 .vtt-editor__list li.is-past-video-end,
 .vtt-editor__list li.is-short-cue,
 .vtt-editor__list li.has-empty-body {
@@ -300,6 +301,8 @@ html, body {
 }
 .vtt-editor__overlap-warning,
 .vtt-editor__overlap-label,
+.vtt-editor__duplicate-warning,
+.vtt-editor__duplicate-label,
 .vtt-editor__duration-warning,
 .vtt-editor__duration-label,
 .vtt-editor__short-cue-warning,
@@ -307,10 +310,12 @@ html, body {
 .vtt-editor__empty-body-warning,
 .vtt-editor__empty-body-label { color: #ffca6a; }
 .vtt-editor__overlap-warning,
+.vtt-editor__duplicate-warning,
 .vtt-editor__duration-warning,
 .vtt-editor__short-cue-warning,
 .vtt-editor__empty-body-warning { flex-basis: 100%; }
 .vtt-editor__overlap-label,
+.vtt-editor__duplicate-label,
 .vtt-editor__duration-label,
 .vtt-editor__short-cue-label,
 .vtt-editor__empty-body-label { font-size: 0.72rem; }

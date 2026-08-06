@@ -16,6 +16,18 @@ Fields:
 
 ## Items
 
+### T-049.20 - Warn about near-duplicate WebVTT cue timings
+- status: `done`
+- goal: identify cue pairs whose start and end times are effectively the same after combining suggestion files, so reviewers can spot duplicate candidates without treating every ordinary overlap as a duplicate or blocking export
+- source: `T-049 standing criterion; Sebas 2026-08-06`
+- workspace: `/home/sebas/work/projects/sport-frames`
+- next_step:
+  - select the next narrow live-annotation improvement
+- notes:
+  - completed: the editor detects every cue pair whose start times and end times are each within an inclusive 100ms tolerance, regardless of cue text, marks affected cues with an amber **Near-duplicate timing** label, and reports the pair count in the toolbar. This targets repeated imports and combined outputs from distinct `tools/suggest-*-vtt.sh` generators while leaving broader overlaps to the existing T-049.15 warning. Detection is visual-only; no automatic merge, timing mutation, blocked export, backend, dependency, framework, upload, account, or persistence change
+  - verified 2026-08-06: `node --check script.js`; `node tools/verify-near-duplicate-warning.js`; all four existing warning harnesses; `git diff --check`; the Node harness extracts the shipped detector and proves exact timing with different text, inclusive 100ms boundary tolerance, one-boundary-outside rejection, ordinary-overlap rejection, and all-pair counting; a real static HTTP server returned `200` for `/?vtt-editor`, `/script.js`, and `/style.css`, with the served assets containing the detector and warning styles
+- tags: [project:sport-frames, type:vtt-editor-near-duplicate-warning, criterion:live-annotations]
+
 ### T-049.19 - FFmpeg loud-peak-to-WebVTT cue suggestions
 - status: `done`
 - goal: generate review-only WebVTT cue candidates for sustained loud audio intervals using FFmpeg's existing `astats` filter, without browser changes, an authoring UI, storage layer, or backend

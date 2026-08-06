@@ -35,6 +35,7 @@
   let nextCueId = 1;
   const VTT_EDITOR_STORAGE_KEY = "sport-frames:vtt-editor-cues";
   const SHORT_CUE_THRESHOLD_SECONDS = 0.15;
+  const NEAR_DUPLICATE_CUE_TOLERANCE_SECONDS = 0.1;
 
   const clamp = (n, min, max) => Math.min(max, Math.max(min, n));
   const anchorHtml = (progress) =>
@@ -169,6 +170,25 @@
     return { cueIds, pairCount };
   }
 
+  function findNearDuplicateCues(cues) {
+    const cueIds = new Set();
+    let pairCount = 0;
+    cues.forEach((cue, index) => {
+      for (let nextIndex = index + 1; nextIndex < cues.length; nextIndex++) {
+        const next = cues[nextIndex];
+        if (
+          Math.round(Math.abs(cue.start - next.start) * 1000) <= NEAR_DUPLICATE_CUE_TOLERANCE_SECONDS * 1000 &&
+          Math.round(Math.abs(cue.end - next.end) * 1000) <= NEAR_DUPLICATE_CUE_TOLERANCE_SECONDS * 1000
+        ) {
+          cueIds.add(cue.id);
+          cueIds.add(next.id);
+          pairCount++;
+        }
+      }
+    });
+    return { cueIds, pairCount };
+  }
+
   function findCuesPastVideoEnd(cues, duration) {
     if (!Number.isFinite(duration)) return new Set();
     return new Set(cues.filter((cue) => cue.start > duration || cue.end > duration).map((cue) => cue.id));
@@ -252,6 +272,7 @@
     if (!vttEditor) return;
     const list = vttEditor.querySelector(".vtt-editor__list");
     const overlaps = findCueOverlaps(editorCues);
+    const nearDuplicates = findNearDuplicateCues(editorCues);
     const pastVideoEnd = findCuesPastVideoEnd(editorCues, video.duration);
     const shortCues = findShortCues(editorCues);
     const emptyCueBodies = findEmptyCueBodies(editorCues);
@@ -268,6 +289,13 @@
           const warning = document.createElement("strong");
           warning.className = "vtt-editor__overlap-label";
           warning.textContent = "Overlaps another cue";
+          summary.append(" ", warning);
+        }
+        if (nearDuplicates.cueIds.has(cue.id)) {
+          item.classList.add("is-near-duplicate");
+          const warning = document.createElement("strong");
+          warning.className = "vtt-editor__duplicate-label";
+          warning.textContent = "Near-duplicate timing";
           summary.append(" ", warning);
         }
         if (pastVideoEnd.has(cue.id)) {
@@ -303,6 +331,11 @@
     warning.textContent = overlaps.pairCount === 1
       ? "Warning: 1 overlapping cue pair."
       : `Warning: ${overlaps.pairCount} overlapping cue pairs.`;
+    const duplicateWarning = vttEditor.querySelector(".vtt-editor__duplicate-warning");
+    duplicateWarning.hidden = nearDuplicates.pairCount === 0;
+    duplicateWarning.textContent = nearDuplicates.pairCount === 1
+      ? "Warning: 1 near-duplicate cue pair."
+      : `Warning: ${nearDuplicates.pairCount} near-duplicate cue pairs.`;
     const durationWarning = vttEditor.querySelector(".vtt-editor__duration-warning");
     durationWarning.hidden = pastVideoEnd.size === 0;
     durationWarning.textContent = pastVideoEnd.size === 1
@@ -339,6 +372,7 @@
       <div class="vtt-editor__toolbar">
         <span class="vtt-editor__count">0 cues</span>
         <strong class="vtt-editor__overlap-warning" role="status" hidden></strong>
+        <strong class="vtt-editor__duplicate-warning" role="status" hidden></strong>
         <strong class="vtt-editor__duration-warning" role="status" hidden></strong>
         <strong class="vtt-editor__short-cue-warning" role="status" hidden></strong>
         <strong class="vtt-editor__empty-body-warning" role="status" hidden></strong>
