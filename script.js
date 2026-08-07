@@ -35,6 +35,7 @@
   let nextCueId = 1;
   const VTT_EDITOR_STORAGE_KEY = "sport-frames:vtt-editor-cues";
   const SHORT_CUE_THRESHOLD_SECONDS = 0.15;
+  const MAX_CUE_CHARACTERS_PER_SECOND = 20;
   const NEAR_DUPLICATE_CUE_TOLERANCE_SECONDS = 0.1;
 
   const clamp = (n, min, max) => Math.min(max, Math.max(min, n));
@@ -202,6 +203,14 @@
     return new Set(cues.filter((cue) => typeof cue.text !== "string" || !cue.text.trim() || cue.text.trim() === "TODO").map((cue) => cue.id));
   }
 
+  function findFastReadingCues(cues) {
+    return new Set(cues.filter((cue) => {
+      const duration = cue.end - cue.start;
+      return duration > 0 && typeof cue.text === "string" &&
+        cue.text.trim().length / duration > MAX_CUE_CHARACTERS_PER_SECOND;
+    }).map((cue) => cue.id));
+  }
+
   function currentScrubTime() {
     return Number.isFinite(video.duration) ? scrollProgress() * video.duration : 0;
   }
@@ -276,6 +285,7 @@
     const pastVideoEnd = findCuesPastVideoEnd(editorCues, video.duration);
     const shortCues = findShortCues(editorCues);
     const emptyCueBodies = findEmptyCueBodies(editorCues);
+    const fastReadingCues = findFastReadingCues(editorCues);
     list.replaceChildren();
     [...editorCues]
       .sort((a, b) => a.start - b.start || a.end - b.end || a.id - b.id)
@@ -319,6 +329,13 @@
           warning.textContent = "Needs annotation text";
           summary.append(" ", warning);
         }
+        if (fastReadingCues.has(cue.id)) {
+          item.classList.add("is-fast-reading");
+          const warning = document.createElement("strong");
+          warning.className = "vtt-editor__reading-speed-label";
+          warning.textContent = "High reading speed";
+          summary.append(" ", warning);
+        }
         const actions = document.createElement("span");
         actions.className = "vtt-editor__item-actions";
         actions.innerHTML = `<button type="button" data-action="go-to">Go to start</button><button type="button" data-action="edit">Edit</button><button type="button" data-action="delete">Delete</button>`;
@@ -351,6 +368,11 @@
     emptyBodyWarning.textContent = emptyCueBodies.size === 1
       ? "Warning: 1 cue needs annotation text."
       : `Warning: ${emptyCueBodies.size} cues need annotation text.`;
+    const readingSpeedWarning = vttEditor.querySelector(".vtt-editor__reading-speed-warning");
+    readingSpeedWarning.hidden = fastReadingCues.size === 0;
+    readingSpeedWarning.textContent = fastReadingCues.size === 1
+      ? "Warning: 1 cue exceeds 20 characters per second."
+      : `Warning: ${fastReadingCues.size} cues exceed 20 characters per second.`;
   }
 
   function setupVttEditor() {
@@ -376,6 +398,7 @@
         <strong class="vtt-editor__duration-warning" role="status" hidden></strong>
         <strong class="vtt-editor__short-cue-warning" role="status" hidden></strong>
         <strong class="vtt-editor__empty-body-warning" role="status" hidden></strong>
+        <strong class="vtt-editor__reading-speed-warning" role="status" hidden></strong>
         <label class="vtt-editor__import">Import .vtt<input type="file" accept="text/vtt,.vtt" data-import></label>
         <button type="button" data-export="apply">Apply to video</button>
         <button type="button" data-export="download">Download .vtt</button>

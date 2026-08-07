@@ -294,7 +294,8 @@ html, body {
 .vtt-editor__list li.is-near-duplicate,
 .vtt-editor__list li.is-past-video-end,
 .vtt-editor__list li.is-short-cue,
-.vtt-editor__list li.has-empty-body {
+.vtt-editor__list li.has-empty-body,
+.vtt-editor__list li.is-fast-reading {
   padding: 0.35rem;
   border-left: 3px solid #ffb020;
   background: rgba(255, 176, 32, 0.12);
@@ -308,17 +309,21 @@ html, body {
 .vtt-editor__short-cue-warning,
 .vtt-editor__short-cue-label,
 .vtt-editor__empty-body-warning,
-.vtt-editor__empty-body-label { color: #ffca6a; }
+.vtt-editor__empty-body-label,
+.vtt-editor__reading-speed-warning,
+.vtt-editor__reading-speed-label { color: #ffca6a; }
 .vtt-editor__overlap-warning,
 .vtt-editor__duplicate-warning,
 .vtt-editor__duration-warning,
 .vtt-editor__short-cue-warning,
-.vtt-editor__empty-body-warning { flex-basis: 100%; }
+.vtt-editor__empty-body-warning,
+.vtt-editor__reading-speed-warning { flex-basis: 100%; }
 .vtt-editor__overlap-label,
 .vtt-editor__duplicate-label,
 .vtt-editor__duration-label,
 .vtt-editor__short-cue-label,
-.vtt-editor__empty-body-label { font-size: 0.72rem; }
+.vtt-editor__empty-body-label,
+.vtt-editor__reading-speed-label { font-size: 0.72rem; }
 .vtt-editor__item-actions { justify-content: flex-start; margin-top: 0.25rem; }
 
 .annotation-preview__active {

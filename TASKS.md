@@ -16,6 +16,18 @@ Fields:
 
 ## Items
 
+### T-049.21 - Warn about excessive WebVTT cue reading speed
+- status: `done`
+- goal: flag cues whose text density exceeds a practical reading-speed ceiling, so reviewers can catch annotations that are individually valid but cannot comfortably be read during their allotted time
+- source: `T-049 standing criterion; Sebas 2026-08-07`
+- workspace: `/home/sebas/work/projects/sport-frames`
+- next_step:
+  - select the next narrow live-annotation improvement
+- notes:
+  - completed: the editor flags cue text above 20 trimmed characters per second with an amber **High reading speed** label and reports the affected cue count in the toolbar. The exact 20 cps boundary remains valid; invalid zero-duration cues remain the existing duration concern rather than receiving a misleading speed warning. Detection is visual-only; no text/timing mutation, blocked export, backend, dependency, framework, upload, account, or persistence change
+  - verified 2026-08-07: `node --check script.js`; `node tools/verify-reading-speed-warning.js`; all five existing warning harnesses; `git diff --check`; the Node harness extracts the shipped detector and proves ordinary speed, exact-boundary acceptance, above-boundary detection, trimmed outer whitespace, zero-duration handling, mixed cue selection, and render/accessible-toolbar wiring; real static HTTP served `/?vtt-editor`, `/script.js`, and `/style.css` with the detector and warning styles. Real Chromium and Firefox headless UI checks were attempted, but Chromium still fails before page load on this Pi (`unrecognized flag --no-decommit-pooled-pages`) and Firefox hung without producing a screenshot
+- tags: [project:sport-frames, type:vtt-editor-reading-speed-warning, criterion:live-annotations]
+
 ### T-049.20 - Warn about near-duplicate WebVTT cue timings
 - status: `done`
 - goal: identify cue pairs whose start and end times are effectively the same after combining suggestion files, so reviewers can spot duplicate candidates without treating every ordinary overlap as a duplicate or blocking export
