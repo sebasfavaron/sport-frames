@@ -33,6 +33,7 @@
   let editorCues = [];
   let editingCueId = null;
   let editingCueOriginal = null;
+  let destructiveUndoSnapshot = null;
   let nextCueId = 1;
   const VTT_EDITOR_STORAGE_KEY = "sport-frames:vtt-editor-cues";
   const SHORT_CUE_THRESHOLD_SECONDS = 0.15;
@@ -282,6 +283,15 @@
     }
   }
 
+  function snapshotCues(cues) {
+    return cues.map((cue) => ({ ...cue }));
+  }
+
+  function setDestructiveUndoSnapshot(cues) {
+    destructiveUndoSnapshot = snapshotCues(cues);
+    if (vttEditor) vttEditor.querySelector('[data-action="undo-destructive"]').disabled = false;
+  }
+
   function saveEditorCues() {
     try {
       localStorage.setItem(
@@ -439,6 +449,7 @@
         <label class="vtt-editor__import">Import .vtt<input type="file" accept="text/vtt,.vtt" data-import></label>
         <button type="button" data-export="apply">Apply to video</button>
         <button type="button" data-export="download">Download .vtt</button>
+        <button type="button" data-action="undo-destructive" disabled>Undo delete</button>
         <button type="button" data-action="clear-all">Clear all cues</button>
       </div>
       <ol class="vtt-editor__list"></ol>
@@ -521,6 +532,7 @@
         return;
       }
       if (button.dataset.action === "delete") {
+        setDestructiveUndoSnapshot(editorCues);
         editorCues = editorCues.filter((cue) => cue.id !== id);
         if (editingCueId === id) resetEditorForm();
         renderEditorCues();
@@ -562,12 +574,24 @@
       saveEditorCues();
       setEditorStatus(`Imported ${parsed.length} cue${parsed.length === 1 ? "" : "s"}.`);
     });
+    vttEditor.querySelector('[data-action="undo-destructive"]').addEventListener("click", (event) => {
+      if (!destructiveUndoSnapshot) return;
+      editorCues = snapshotCues(destructiveUndoSnapshot);
+      destructiveUndoSnapshot = null;
+      event.currentTarget.disabled = true;
+      resetEditorForm({ rollback: false });
+      renderEditorCues();
+      updateVttAnnotation();
+      saveEditorCues();
+      setEditorStatus("Last delete restored.");
+    });
     vttEditor.querySelector('[data-action="clear-all"]').addEventListener("click", () => {
       if (!editorCues.length) {
         setEditorStatus("No cues to clear.");
         return;
       }
       if (!window.confirm(`Delete all ${editorCues.length} cue(s) and clear saved storage?`)) return;
+      setDestructiveUndoSnapshot(editorCues);
       editorCues = [];
       resetEditorForm();
       renderEditorCues();

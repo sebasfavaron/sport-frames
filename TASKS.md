@@ -16,6 +16,18 @@ Fields:
 
 ## Items
 
+### T-049.23 - Undo accidental WebVTT cue deletion
+- status: `done`
+- goal: let reviewers recover once from an accidental cue deletion or confirmed clear-all after the editor has already persisted that destructive action to local browser storage
+- source: `T-049 standing criterion; Sebas 2026-08-08`
+- workspace: `/home/sebas/work/projects/sport-frames`
+- next_step:
+  - select the next narrow live-annotation improvement
+- notes:
+  - completed: the editor keeps one in-memory snapshot immediately before single-cue delete or confirmed clear-all and enables **Undo delete** to restore the complete prior cue list, including timing, text, and spatial values. Restore refreshes the list/live preview and localStorage, then consumes and disables the one-shot undo. A later destructive action replaces the older snapshot; add/edit/import history, redo, multi-level history, backend, account, upload, dependency, and framework remain out of scope
+  - verified 2026-08-08: `node --check script.js`; every `tools/verify-*.js` harness; `bash -n tools/*.sh`; `git diff --check`; `tools/verify-destructive-undo.js` extracts the shipped snapshot helper and proves independent full-cue cloning, exact single-delete restoration, multi-cue clear-all restoration, snapshot-before-mutation wiring, one-shot consumption, and preview/localStorage refresh wiring. `ffprobe` read the real `assets/default.mp4` duration as `14.666667s`; a real static HTTP server served `/?vtt-editor`, `/script.js`, and `/style.css`, and the fetched script passed `node --check` and contained the undo control
+- tags: [project:sport-frames, type:vtt-editor-destructive-undo, criterion:live-annotations]
+
 ### T-049.22 - Spatial positioning for WebVTT editor cues
 - status: `done`
 - goal: let reviewers place each cue on the video frame and preserve that placement through live preview, browser reload, import, apply, and `.vtt` download
