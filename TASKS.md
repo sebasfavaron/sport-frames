@@ -16,6 +16,18 @@ Fields:
 
 ## Items
 
+### T-049.22 - Spatial positioning for WebVTT editor cues
+- status: `done`
+- goal: let reviewers place each cue on the video frame and preserve that placement through live preview, browser reload, import, apply, and `.vtt` download
+- source: `T-049 standing criterion; Sebas 2026-08-07`
+- workspace: `/home/sebas/work/projects/sport-frames`
+- next_step:
+  - select the next narrow live-annotation improvement
+- notes:
+  - completed: cue editing now exposes X, Y, and width percentages plus 1% arrow nudges; edits render live as independently positioned overlays. Export uses only standard WebVTT `line`, `position`, `size`, and `align` cue settings (`line/position` center alignment), with no custom format extension. Import parses those settings, legacy cues receive stable defaults, and localStorage preserves spatial values. Cancel restores the pre-edit position
+  - verified 2026-08-07: `node --check script.js`; every `tools/verify-*.js` harness; `git diff --check`; `tools/verify-vtt-spatial-position.js` extracts the shipped parser/export/storage functions and proves a `x=23/y=71/size=42` cue exports as native settings, parses identically, survives localStorage reload, and re-exports byte-identically. A real static HTTP server served the page/script/CSS and the same exercise passed against the fetched `/script.js`. Direct headless Chromium was attempted via `/usr/lib/chromium/chromium`, but this Pi build hung before DOM output and timed out
+- tags: [project:sport-frames, type:vtt-cue-spatial-position, criterion:live-annotations]
+
 ### T-049.21 - Warn about excessive WebVTT cue reading speed
 - status: `done`
 - goal: flag cues whose text density exceeds a practical reading-speed ceiling, so reviewers can catch annotations that are individually valid but cannot comfortably be read during their allotted time

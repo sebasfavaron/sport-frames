@@ -32,6 +32,7 @@
   let vttEditor = null;
   let editorCues = [];
   let editingCueId = null;
+  let editingCueOriginal = null;
   let nextCueId = 1;
   const VTT_EDITOR_STORAGE_KEY = "sport-frames:vtt-editor-cues";
   const SHORT_CUE_THRESHOLD_SECONDS = 0.15;
@@ -115,10 +116,21 @@
     document.body.append(vttCue);
   }
 
+  const cueSpatial = (cue) => ({
+    x: Number.isFinite(cue.x) ? clamp(cue.x, 0, 100) : 50,
+    y: Number.isFinite(cue.y) ? clamp(cue.y, 0, 100) : 8,
+    size: Number.isFinite(cue.size) ? clamp(cue.size, 1, 100) : 60
+  });
+
+  const cueSettings = (cue) => {
+    const { x, y, size } = cueSpatial(cue);
+    return `line:${y}%,center position:${x}%,center size:${size}% align:center`;
+  };
+
   function buildVtt() {
     const body = [...editorCues]
       .sort((a, b) => a.start - b.start || a.end - b.end || a.id - b.id)
-      .map((cue) => `${vttTimestamp(cue.start)} --> ${vttTimestamp(cue.end)}\n${cue.text}`)
+      .map((cue) => `${vttTimestamp(cue.start)} --> ${vttTimestamp(cue.end)} ${cueSettings(cue)}\n${cue.text}`)
       .join("\n\n");
     return `WEBVTT\n\n${body}${body ? "\n" : ""}`;
   }
@@ -141,7 +153,12 @@
         continue;
       }
       const start = parseVttTimestamp(lines[i].slice(0, arrowIndex));
-      const end = parseVttTimestamp(lines[i].slice(arrowIndex + 3).trim().split(/\s+/)[0] || "");
+      const timingTail = lines[i].slice(arrowIndex + 3).trim().split(/\s+/);
+      const end = parseVttTimestamp(timingTail.shift() || "");
+      const settings = timingTail.join(" ");
+      const line = /(?:^|\s)line:([\d.]+)%(?:,center)?(?:\s|$)/.exec(settings);
+      const position = /(?:^|\s)position:([\d.]+)%(?:,center)?(?:\s|$)/.exec(settings);
+      const size = /(?:^|\s)size:([\d.]+)%(?:\s|$)/.exec(settings);
       i++;
       const textLines = [];
       while (i < lines.length && lines[i].trim() !== "") {
@@ -149,7 +166,14 @@
         i++;
       }
       if (Number.isFinite(start) && Number.isFinite(end) && end > start && textLines.length) {
-        cues.push({ start, end, text: textLines.join("\n").trim() });
+        cues.push({
+          start,
+          end,
+          text: textLines.join("\n").trim(),
+          x: position ? clamp(Number(position[1]), 0, 100) : 50,
+          y: line ? clamp(Number(line[1]), 0, 100) : 8,
+          size: size ? clamp(Number(size[1]), 1, 100) : 60
+        });
       }
     }
     return cues;
@@ -262,16 +286,22 @@
     try {
       localStorage.setItem(
         VTT_EDITOR_STORAGE_KEY,
-        JSON.stringify(editorCues.map(({ start, end, text }) => ({ start, end, text })))
+        JSON.stringify(editorCues.map(({ start, end, text, x, y, size }) => ({ start, end, text, ...cueSpatial({ x, y, size }) })))
       );
     } catch {
       setEditorStatus("Cue saved in memory, but local storage is unavailable.");
     }
   }
 
-  function resetEditorForm() {
+  function resetEditorForm({ rollback = true } = {}) {
     if (!vttEditor) return;
+    if (rollback && editingCueId !== null && editingCueOriginal) {
+      const cue = editorCues.find((item) => item.id === editingCueId);
+      if (cue) Object.assign(cue, editingCueOriginal);
+      updateVttAnnotation();
+    }
     editingCueId = null;
+    editingCueOriginal = null;
     vttEditor.querySelector("form").reset();
     vttEditor.querySelector(".vtt-editor__save").textContent = "Add cue";
     vttEditor.querySelector(".vtt-editor__cancel").hidden = true;
@@ -293,7 +323,8 @@
         const item = document.createElement("li");
         item.dataset.cueId = String(cue.id);
         const summary = document.createElement("span");
-        summary.textContent = `${vttTimestamp(cue.start)} → ${vttTimestamp(cue.end)}  ${cue.text}`;
+        const spatial = cueSpatial(cue);
+        summary.textContent = `${vttTimestamp(cue.start)} → ${vttTimestamp(cue.end)} · x ${spatial.x}% y ${spatial.y}% · ${cue.text}`;
         if (overlaps.cueIds.has(cue.id)) {
           item.classList.add("is-overlapping");
           const warning = document.createElement("strong");
@@ -389,6 +420,12 @@
         <label>End (seconds)<input name="end" type="number" min="0" step="0.001" required></label>
         <button type="button" data-set-time="end">Use scrub time</button>
         <label class="vtt-editor__text">Cue text<textarea name="text" rows="2" required></textarea></label>
+        <fieldset class="vtt-editor__position"><legend>Position on video (%)</legend>
+          <label>X<input name="x" type="number" min="0" max="100" step="1" value="50" required></label>
+          <label>Y<input name="y" type="number" min="0" max="100" step="1" value="8" required></label>
+          <label>Width<input name="size" type="number" min="1" max="100" step="1" value="60" required></label>
+          <span class="vtt-editor__nudges" aria-label="Nudge cue position"><button type="button" data-nudge-y="-1">↑</button><button type="button" data-nudge-x="-1">←</button><button type="button" data-nudge-x="1">→</button><button type="button" data-nudge-y="1">↓</button></span>
+        </fieldset>
         <div class="vtt-editor__form-actions"><button class="vtt-editor__save" type="submit">Add cue</button><button class="vtt-editor__cancel" type="button" hidden>Cancel edit</button></div>
       </form>
       <div class="vtt-editor__toolbar">
@@ -423,24 +460,47 @@
       event.preventDefault();
       setFormTime(field);
     });
+    vttEditor.querySelectorAll("[data-nudge-x], [data-nudge-y]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const axis = button.dataset.nudgeX ? "x" : "y";
+        const delta = Number(button.dataset.nudgeX || button.dataset.nudgeY);
+        form.elements[axis].value = clamp(Number(form.elements[axis].value) + delta, 0, 100);
+        form.dispatchEvent(new Event("input", { bubbles: true }));
+      });
+    });
+    form.addEventListener("input", () => {
+      if (editingCueId === null) return;
+      const cue = editorCues.find((item) => item.id === editingCueId);
+      Object.assign(cue, {
+        x: clamp(Number(form.elements.x.value), 0, 100),
+        y: clamp(Number(form.elements.y.value), 0, 100),
+        size: clamp(Number(form.elements.size.value), 1, 100)
+      });
+      updateVttAnnotation();
+    });
     form.addEventListener("submit", (event) => {
       event.preventDefault();
       const start = Number(form.elements.start.value);
       const end = Number(form.elements.end.value);
       const text = form.elements.text.value.trim();
-      if (!Number.isFinite(start) || !Number.isFinite(end) || start < 0 || end <= start || !text) {
+      const x = Number(form.elements.x.value);
+      const y = Number(form.elements.y.value);
+      const size = Number(form.elements.size.value);
+      if (!Number.isFinite(start) || !Number.isFinite(end) || start < 0 || end <= start || !text ||
+          !Number.isFinite(x) || x < 0 || x > 100 || !Number.isFinite(y) || y < 0 || y > 100 ||
+          !Number.isFinite(size) || size < 1 || size > 100) {
         setEditorStatus("Cue needs text and an end after its start.");
         return;
       }
       if (editingCueId === null) {
-        editorCues.push({ id: nextCueId++, start, end, text });
+        editorCues.push({ id: nextCueId++, start, end, text, x, y, size });
         setEditorStatus("Cue added.");
       } else {
         const cue = editorCues.find((item) => item.id === editingCueId);
-        Object.assign(cue, { start, end, text });
+        Object.assign(cue, { start, end, text, x, y, size });
         setEditorStatus("Cue updated.");
       }
-      resetEditorForm();
+      resetEditorForm({ rollback: false });
       renderEditorCues();
       updateVttAnnotation();
       saveEditorCues();
@@ -470,9 +530,14 @@
         return;
       }
       editingCueId = id;
+      editingCueOriginal = { ...cue };
       form.elements.start.value = cue.start.toFixed(3);
       form.elements.end.value = cue.end.toFixed(3);
       form.elements.text.value = cue.text;
+      const spatial = cueSpatial(cue);
+      form.elements.x.value = spatial.x;
+      form.elements.y.value = spatial.y;
+      form.elements.size.value = spatial.size;
       vttEditor.querySelector(".vtt-editor__save").textContent = "Update cue";
       vttEditor.querySelector(".vtt-editor__cancel").hidden = false;
     });
@@ -572,11 +637,24 @@
 
   function updateVttAnnotation() {
     const activeCues = annotationTrack.track.activeCues;
-    const trackText = activeCues ? Array.from(activeCues, (cue) => cue.text) : [];
-    const editorText = editorCues
+    const previews = activeCues ? Array.from(activeCues, (cue) => ({
+      text: cue.text,
+      x: Number.isFinite(cue.position) ? cue.position : 50,
+      y: typeof cue.line === "number" && !cue.snapToLines ? cue.line : 8,
+      size: Number.isFinite(cue.size) ? cue.size : 60
+    })) : [];
+    editorCues
       .filter((cue) => video.currentTime >= cue.start && video.currentTime < cue.end)
-      .map((cue) => cue.text);
-    vttAnnotation.textContent = [...trackText, ...editorText].join(" ");
+      .forEach((cue) => previews.push({ text: cue.text, ...cueSpatial(cue) }));
+    vttAnnotation.replaceChildren(...previews.map((cue) => {
+      const element = document.createElement("span");
+      element.className = "scrolly__vtt-cue";
+      element.textContent = cue.text;
+      element.style.left = `${cue.x}%`;
+      element.style.top = `${cue.y}%`;
+      element.style.width = `${cue.size}%`;
+      return element;
+    }));
   }
 
   function updateCaptions(progress) {

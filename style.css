@@ -144,21 +144,23 @@ html, body {
 .scrolly__vtt-annotation {
   position: absolute;
   z-index: 1;
-  top: 8%;
-  left: 50%;
-  max-width: min(36rem, calc(100% - 2rem));
-  padding: 0.55rem 0.8rem;
-  transform: translateX(-50%);
+  inset: 0;
   color: var(--fg);
-  background: rgba(11, 11, 13, 0.82);
-  border-radius: 5px;
   font-size: clamp(0.85rem, 2vw, 1rem);
   line-height: 1.35;
-  text-align: center;
   pointer-events: none;
 }
 
-.scrolly__vtt-annotation:empty { display: none; }
+.scrolly__vtt-cue {
+  position: absolute;
+  display: block;
+  padding: 0.55rem 0.8rem;
+  transform: translate(-50%, -50%);
+  background: rgba(11, 11, 13, 0.82);
+  border-radius: 5px;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
 
 .annotation-preview {
   position: fixed;
@@ -235,7 +237,21 @@ html, body {
 
 .vtt-editor label { display: grid; gap: 0.2rem; }
 .vtt-editor__text,
+.vtt-editor__position,
 .vtt-editor__form-actions { grid-column: 1 / -1; }
+
+.vtt-editor__position {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr) auto;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0.45rem;
+  border: 1px solid #3a3a3f;
+  border-radius: 4px;
+}
+
+.vtt-editor__position legend { color: var(--muted); }
+.vtt-editor__nudges { display: grid; grid-template-columns: repeat(2, auto); align-self: end; }
 
 .vtt-editor input,
 .vtt-editor textarea {
