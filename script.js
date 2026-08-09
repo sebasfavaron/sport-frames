@@ -236,6 +236,12 @@
     }).map((cue) => cue.id));
   }
 
+  function findCueBodiesWithBlankLines(cues) {
+    return new Set(cues.filter((cue) =>
+      typeof cue.text === "string" && /(?:\r?\n)[\t ]*(?:\r?\n)/.test(cue.text)
+    ).map((cue) => cue.id));
+  }
+
   function currentScrubTime() {
     return Number.isFinite(video.duration) ? scrollProgress() * video.duration : 0;
   }
@@ -326,6 +332,7 @@
     const shortCues = findShortCues(editorCues);
     const emptyCueBodies = findEmptyCueBodies(editorCues);
     const fastReadingCues = findFastReadingCues(editorCues);
+    const cueBodiesWithBlankLines = findCueBodiesWithBlankLines(editorCues);
     list.replaceChildren();
     [...editorCues]
       .sort((a, b) => a.start - b.start || a.end - b.end || a.id - b.id)
@@ -377,6 +384,13 @@
           warning.textContent = "High reading speed";
           summary.append(" ", warning);
         }
+        if (cueBodiesWithBlankLines.has(cue.id)) {
+          item.classList.add("has-blank-line");
+          const warning = document.createElement("strong");
+          warning.className = "vtt-editor__blank-line-label";
+          warning.textContent = "Blank line splits WebVTT cue";
+          summary.append(" ", warning);
+        }
         const actions = document.createElement("span");
         actions.className = "vtt-editor__item-actions";
         actions.innerHTML = `<button type="button" data-action="go-to">Go to start</button><button type="button" data-action="edit">Edit</button><button type="button" data-action="delete">Delete</button>`;
@@ -414,6 +428,11 @@
     readingSpeedWarning.textContent = fastReadingCues.size === 1
       ? "Warning: 1 cue exceeds 20 characters per second."
       : `Warning: ${fastReadingCues.size} cues exceed 20 characters per second.`;
+    const blankLineWarning = vttEditor.querySelector(".vtt-editor__blank-line-warning");
+    blankLineWarning.hidden = cueBodiesWithBlankLines.size === 0;
+    blankLineWarning.textContent = cueBodiesWithBlankLines.size === 1
+      ? "Warning: 1 cue body contains a blank line that terminates a WebVTT cue."
+      : `Warning: ${cueBodiesWithBlankLines.size} cue bodies contain blank lines that terminate WebVTT cues.`;
   }
 
   function setupVttEditor() {
@@ -446,6 +465,7 @@
         <strong class="vtt-editor__short-cue-warning" role="status" hidden></strong>
         <strong class="vtt-editor__empty-body-warning" role="status" hidden></strong>
         <strong class="vtt-editor__reading-speed-warning" role="status" hidden></strong>
+        <strong class="vtt-editor__blank-line-warning" role="status" hidden></strong>
         <label class="vtt-editor__import">Import .vtt<input type="file" accept="text/vtt,.vtt" data-import></label>
         <button type="button" data-export="apply">Apply to video</button>
         <button type="button" data-export="download">Download .vtt</button>

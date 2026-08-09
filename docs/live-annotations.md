@@ -292,3 +292,14 @@ When the loaded video exposes a finite duration, mark every editor cue whose sta
 - Detection runs through the normal render path after authoring, editing, import, restore, and video duration changes.
 - The warning is advisory only. Saving, applying, and downloading remain allowed because WebVTT permits such timings.
 - Unknown/`NaN` video duration produces no warning. No backend, account, upload, dependency, framework, or new persistence.
+
+## T-049.24: warn about blank lines inside WebVTT cue bodies
+
+### Decision
+
+Mark editor cues whose text contains an empty or whitespace-only line between text lines.
+
+- WebVTT uses a blank line to terminate a cue block. Exporting paragraph-separated text therefore splits the authored body instead of preserving it as one cue.
+- Adjacent non-empty multiline text remains valid and is not flagged. LF and CRLF input, including whitespace-only separator lines, are covered.
+- Each affected list item shows **Blank line splits WebVTT cue**; the toolbar reports the affected cue count.
+- Advisory only: editing, applying, and downloading remain available so the reviewer controls the correction. No text mutation, backend, dependency, framework, upload, account, or persistence change.

@@ -16,6 +16,18 @@ Fields:
 
 ## Items
 
+### T-049.24 - Warn about blank lines inside WebVTT cue bodies
+- status: `done`
+- goal: flag cue text whose paragraph-style blank lines will terminate the WebVTT cue block, so reviewers can fix an export that cannot preserve the authored body as one cue
+- source: `T-049 standing criterion; Sebas 2026-08-09`
+- workspace: `/home/sebas/work/projects/sport-frames`
+- next_step:
+  - select the next narrow live-annotation improvement
+- notes:
+  - completed: the editor detects LF or CRLF blank/whitespace-only lines inside cue text, marks affected cues with an amber **Blank line splits WebVTT cue** label, and reports the affected count in the toolbar. This follows WebVTT's blank-line cue-block terminator while allowing valid adjacent non-empty multiline cue text. Detection is advisory only; no text mutation, blocked export, backend, dependency, framework, upload, account, or persistence change
+  - verified 2026-08-09: `node --check script.js`; every `tools/verify-*.js` harness; `bash -n tools/*.sh`; `git diff --check`; `tools/verify-blank-line-warning.js` extracts the shipped detector and proves safe single-line and adjacent multiline bodies, LF/CRLF and whitespace-only blank-line detection, missing-text separation, mixed-cue selection, and per-cue/accessible-toolbar wiring. A real static HTTP server served `/?vtt-editor`, `/script.js`, and `/style.css`; the fetched script passed `node --check` and the served assets contained the detector and warning styles
+- tags: [project:sport-frames, type:vtt-editor-blank-line-warning, criterion:live-annotations]
+
 ### T-049.23 - Undo accidental WebVTT cue deletion
 - status: `done`
 - goal: let reviewers recover once from an accidental cue deletion or confirmed clear-all after the editor has already persisted that destructive action to local browser storage
