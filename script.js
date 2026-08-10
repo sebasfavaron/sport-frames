@@ -236,6 +236,11 @@
     }).map((cue) => cue.id));
   }
 
+  function duplicateCue(cue, id) {
+    const duration = cue.end - cue.start;
+    return { id, start: cue.end, end: cue.end + duration, text: cue.text, x: cue.x, y: cue.y, size: cue.size };
+  }
+
   function findCueBodiesWithBlankLines(cues) {
     return new Set(cues.filter((cue) =>
       typeof cue.text === "string" && /(?:\r?\n)[\t ]*(?:\r?\n)/.test(cue.text)
@@ -393,7 +398,7 @@
         }
         const actions = document.createElement("span");
         actions.className = "vtt-editor__item-actions";
-        actions.innerHTML = `<button type="button" data-action="go-to">Go to start</button><button type="button" data-action="edit">Edit</button><button type="button" data-action="delete">Delete</button>`;
+        actions.innerHTML = `<button type="button" data-action="go-to">Go to start</button><button type="button" data-action="duplicate">Duplicate</button><button type="button" data-action="edit">Edit</button><button type="button" data-action="delete">Delete</button>`;
         item.append(summary, actions);
         list.append(item);
       });
@@ -559,6 +564,15 @@
         updateVttAnnotation();
         saveEditorCues();
         setEditorStatus("Cue deleted.");
+        return;
+      }
+      if (button.dataset.action === "duplicate") {
+        const clone = duplicateCue(cue, nextCueId++);
+        editorCues.push(clone);
+        renderEditorCues();
+        updateVttAnnotation();
+        saveEditorCues();
+        setEditorStatus(`Duplicated cue at ${vttTimestamp(clone.start)}.`);
         return;
       }
       editingCueId = id;

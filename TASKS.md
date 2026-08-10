@@ -16,6 +16,18 @@ Fields:
 
 ## Items
 
+### T-049.25 - Duplicate a WebVTT cue in the editor
+- status: `done`
+- goal: let reviewers clone an existing editor cue back-to-back after itself, so authoring a run of similar/consecutive annotations (e.g. near-identical scoreboard or repeated-event captions) doesn't require retyping text and spatial position and re-entering timing from scratch for each one
+- source: `T-049 standing criterion; Sebas 2026-08-10`
+- workspace: `/home/sebas/work/projects/sport-frames`
+- next_step:
+  - select the next narrow live-annotation improvement
+- notes:
+  - completed: every editor cue list item gained a native **Duplicate** action alongside the existing Go to start/Edit/Delete actions. It appends a new cue whose start equals the original's end (so the clone sits immediately after it, preserving the original's duration) and copies its text and spatial (x/y/size) values verbatim under a fresh id; the new cue re-renders, refreshes the live preview, and persists to localStorage through the existing save path, then is retimed/edited/repositioned/deleted like any other cue. No auto-merge, backend, dependency, framework, upload, account, or new persistence mechanism
+  - verified 2026-08-10: `node --check script.js`; every `tools/verify-*.js` harness including new `tools/verify-cue-duplicate.js`; `bash -n tools/*.sh`; `git diff --check`; `tools/verify-cue-duplicate.js` extracts the shipped `duplicateCue` verbatim and proves back-to-back start placement, duration/text/spatial preservation, id substitution, and the zero-duration edge case, then asserts the list-item Duplicate control and click-handler wiring (clone, push, re-render, live-preview refresh, persistence, status line) are all present in the shipped script. A real static HTTP server served `/?vtt-editor`, `/script.js`, and `/style.css` with `200`; the fetched `/script.js` passed `node --check` and contained `duplicateCue` and the Duplicate button. `ffprobe` read the real `assets/default.mp4` duration as `14.666667s`
+- tags: [project:sport-frames, type:vtt-editor-cue-duplicate, criterion:live-annotations]
+
 ### T-049.24 - Warn about blank lines inside WebVTT cue bodies
 - status: `done`
 - goal: flag cue text whose paragraph-style blank lines will terminate the WebVTT cue block, so reviewers can fix an export that cannot preserve the authored body as one cue
