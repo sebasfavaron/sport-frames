@@ -16,6 +16,18 @@ Fields:
 
 ## Items
 
+### T-049.26 - Escape reserved WebVTT cue payload characters
+- status: `done`
+- goal: preserve literal reviewer-authored `&`, `<`, and `>` characters through WebVTT export, native track parsing, and re-import instead of letting the WebVTT cue parser treat plain annotation text as entities or markup
+- source: `T-032 daily orchestrator; 2026-08-11`
+- workspace: `/home/sebas/work/projects/sport-frames`
+- next_step:
+  - select the next narrow live-annotation improvement
+- notes:
+  - completed: WebVTT export now escapes reserved cue payload characters in reviewer text (`&` first, then `<` and `>`), while import decodes the corresponding `&amp;`, `&lt;`, and `&gt;` entities in round-trip-safe order. Editor summaries and live previews remain raw literal text rendered through existing `textContent` paths. No timing, spatial positioning, warning, backend, dependency, framework, upload, account, or persistence change
+  - verified 2026-08-11: `node --check script.js`; every `tools/verify-*.js` harness including new `tools/verify-vtt-cue-text-entities.js`; `bash -n tools/*.sh`; `git diff --check`. The new harness extracts the shipped escape/unescape helpers verbatim and proves exact export plus lossless re-import for ampersand, less-than, greater-than, mixed/reserved-entity-looking, and no-reserved-character cases; it also asserts `buildVtt`/`parseVttCues` wiring and raw-text `textContent` rendering. A real static HTTP server returned `200` for `/?vtt-editor`, `/script.js`, and `/style.css`; the fetched `/script.js` passed `node --check` and contained both export escaping and import decoding
+- tags: [project:sport-frames, type:vtt-cue-text-entity-escaping, criterion:live-annotations]
+
 ### T-049.25 - Duplicate a WebVTT cue in the editor
 - status: `done`
 - goal: let reviewers clone an existing editor cue back-to-back after itself, so authoring a run of similar/consecutive annotations (e.g. near-identical scoreboard or repeated-event captions) doesn't require retyping text and spatial position and re-entering timing from scratch for each one

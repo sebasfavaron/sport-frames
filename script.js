@@ -128,10 +128,18 @@
     return `line:${y}%,center position:${x}%,center size:${size}% align:center`;
   };
 
+  function escapeVttCueText(text) {
+    return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+
+  function unescapeVttCueText(text) {
+    return text.replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&");
+  }
+
   function buildVtt() {
     const body = [...editorCues]
       .sort((a, b) => a.start - b.start || a.end - b.end || a.id - b.id)
-      .map((cue) => `${vttTimestamp(cue.start)} --> ${vttTimestamp(cue.end)} ${cueSettings(cue)}\n${cue.text}`)
+      .map((cue) => `${vttTimestamp(cue.start)} --> ${vttTimestamp(cue.end)} ${cueSettings(cue)}\n${escapeVttCueText(cue.text)}`)
       .join("\n\n");
     return `WEBVTT\n\n${body}${body ? "\n" : ""}`;
   }
@@ -170,7 +178,7 @@
         cues.push({
           start,
           end,
-          text: textLines.join("\n").trim(),
+          text: unescapeVttCueText(textLines.join("\n").trim()),
           x: position ? clamp(Number(position[1]), 0, 100) : 50,
           y: line ? clamp(Number(line[1]), 0, 100) : 8,
           size: size ? clamp(Number(size[1]), 1, 100) : 60
