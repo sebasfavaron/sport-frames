@@ -16,6 +16,18 @@ Fields:
 
 ## Items
 
+### T-049.27 - Offset all WebVTT cue timings
+- status: `done`
+- goal: let reviewers synchronize an authored or imported annotation track by shifting every cue start and end by the same signed number of seconds instead of retiming cues individually
+- source: `T-049 standing criterion; Sebas 2026-08-12`
+- workspace: `/home/sebas/work/projects/sport-frames`
+- next_step:
+  - select the next narrow live-annotation improvement
+- notes:
+  - completed: the editor toolbar gained a native **Offset all cues (seconds)** input and **Shift timings** action. A finite positive or negative offset shifts every cue boundary equally while preserving duration, text, position, size, and ids; a shift that would move any cue before `0.000s` is rejected without mutation. A successful shift immediately refreshes the sorted list and live annotation preview and persists through the existing localStorage path. No automatic synchronization detection, media analysis, per-cue editing change, backend, dependency, framework, upload, account, or new persistence mechanism
+  - verified 2026-08-12: `node --check script.js`; every `tools/verify-*.js` harness including new `tools/verify-cue-timing-offset.js`; `bash -n tools/*.sh`; `git diff --check`. The new harness extracts the shipped offset helper verbatim and proves positive and negative shifts, exact-zero acceptance, before-zero and non-finite rejection, complete cue-data preservation, source immutability, and toolbar/preview/list/localStorage wiring. A real static HTTP server returned `200` for `/?vtt-editor`, `/script.js`, and `/style.css`; the fetched `/script.js` passed `node --check` and contained the offset helper and action
+- tags: [project:sport-frames, type:vtt-editor-bulk-timing-offset, criterion:live-annotation-generation]
+
 ### T-049.26 - Escape reserved WebVTT cue payload characters
 - status: `done`
 - goal: preserve literal reviewer-authored `&`, `<`, and `>` characters through WebVTT export, native track parsing, and re-import instead of letting the WebVTT cue parser treat plain annotation text as entities or markup

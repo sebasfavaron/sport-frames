@@ -249,6 +249,11 @@
     return { id, start: cue.end, end: cue.end + duration, text: cue.text, x: cue.x, y: cue.y, size: cue.size };
   }
 
+  function offsetCueTimings(cues, offset) {
+    if (!Number.isFinite(offset) || cues.some((cue) => cue.start + offset < 0)) return null;
+    return cues.map((cue) => ({ ...cue, start: cue.start + offset, end: cue.end + offset }));
+  }
+
   function findCueBodiesWithBlankLines(cues) {
     return new Set(cues.filter((cue) =>
       typeof cue.text === "string" && /(?:\r?\n)[\t ]*(?:\r?\n)/.test(cue.text)
@@ -480,6 +485,7 @@
         <strong class="vtt-editor__reading-speed-warning" role="status" hidden></strong>
         <strong class="vtt-editor__blank-line-warning" role="status" hidden></strong>
         <label class="vtt-editor__import">Import .vtt<input type="file" accept="text/vtt,.vtt" data-import></label>
+        <span class="vtt-editor__offset"><label>Offset all cues (seconds)<input type="number" step="0.001" value="0" data-offset></label><button type="button" data-action="offset-all">Shift timings</button></span>
         <button type="button" data-export="apply">Apply to video</button>
         <button type="button" data-export="download">Download .vtt</button>
         <button type="button" data-action="undo-destructive" disabled>Undo delete</button>
@@ -594,6 +600,20 @@
       form.elements.size.value = spatial.size;
       vttEditor.querySelector(".vtt-editor__save").textContent = "Update cue";
       vttEditor.querySelector(".vtt-editor__cancel").hidden = false;
+    });
+    vttEditor.querySelector('[data-action="offset-all"]').addEventListener("click", () => {
+      const input = vttEditor.querySelector("[data-offset]");
+      const offset = Number(input.value);
+      const shifted = offsetCueTimings(editorCues, offset);
+      if (!shifted) {
+        setEditorStatus("Offset must be a number and cannot move a cue before 0.000s.");
+        return;
+      }
+      editorCues = shifted;
+      renderEditorCues();
+      updateVttAnnotation();
+      saveEditorCues();
+      setEditorStatus(`Shifted ${editorCues.length} cue${editorCues.length === 1 ? "" : "s"} by ${offset.toFixed(3)}s.`);
     });
     vttEditor.querySelector("[data-import]").addEventListener("change", async (event) => {
       const file = event.target.files && event.target.files[0];

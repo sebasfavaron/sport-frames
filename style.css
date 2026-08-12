@@ -279,7 +279,10 @@ html, body {
 
 .vtt-editor__save,
 .vtt-editor [data-export] { background: var(--accent) !important; }
-.vtt-editor__form-actions { justify-content: flex-start; }
+.vtt-editor__form-actions,
+.vtt-editor__offset { justify-content: flex-start; }
+.vtt-editor__offset { align-items: end; }
+.vtt-editor__offset input { width: 8rem; }
 .vtt-editor__live,
 .vtt-editor__status,
 .vtt-editor__count,
