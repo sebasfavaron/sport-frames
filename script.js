@@ -249,6 +249,14 @@
     return { id, start: cue.end, end: cue.end + duration, text: cue.text, x: cue.x, y: cue.y, size: cue.size };
   }
 
+  function splitCueAtTime(cue, time, newId) {
+    if (!Number.isFinite(time) || time <= cue.start || time >= cue.end) return null;
+    return [
+      { ...cue, end: time },
+      { ...cue, id: newId, start: time }
+    ];
+  }
+
   function offsetCueTimings(cues, offset) {
     if (!Number.isFinite(offset) || cues.some((cue) => cue.start + offset < 0)) return null;
     return cues.map((cue) => ({ ...cue, start: cue.start + offset, end: cue.end + offset }));
@@ -411,7 +419,7 @@
         }
         const actions = document.createElement("span");
         actions.className = "vtt-editor__item-actions";
-        actions.innerHTML = `<button type="button" data-action="go-to">Go to start</button><button type="button" data-action="duplicate">Duplicate</button><button type="button" data-action="edit">Edit</button><button type="button" data-action="delete">Delete</button>`;
+        actions.innerHTML = `<button type="button" data-action="go-to">Go to start</button><button type="button" data-action="split">Split at scrub time</button><button type="button" data-action="duplicate">Duplicate</button><button type="button" data-action="edit">Edit</button><button type="button" data-action="delete">Delete</button>`;
         item.append(summary, actions);
         list.append(item);
       });
@@ -587,6 +595,22 @@
         updateVttAnnotation();
         saveEditorCues();
         setEditorStatus(`Duplicated cue at ${vttTimestamp(clone.start)}.`);
+        return;
+      }
+      if (button.dataset.action === "split") {
+        const time = currentScrubTime();
+        const split = splitCueAtTime(cue, time, nextCueId);
+        if (!split) {
+          setEditorStatus("Scrub time must be strictly inside this cue to split it.");
+          return;
+        }
+        if (editingCueId === id) resetEditorForm({ rollback: false });
+        nextCueId += 1;
+        editorCues.splice(editorCues.indexOf(cue), 1, ...split);
+        renderEditorCues();
+        updateVttAnnotation();
+        saveEditorCues();
+        setEditorStatus(`Split cue at ${vttTimestamp(time)}.`);
         return;
       }
       editingCueId = id;

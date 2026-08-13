@@ -16,6 +16,18 @@ Fields:
 
 ## Items
 
+### T-049.28 - Split a WebVTT cue at the live scrub time
+- status: `done`
+- goal: let reviewers divide one long annotation at the current video position without manually copying its text and spatial placement or re-entering both timing ranges
+- source: `T-049; Sebas 2026-07-19 standing criterion: live annotations`
+- workspace: `/home/sebas/work/projects/sport-frames`
+- next_step:
+  - select the next narrow live-annotation improvement
+- notes:
+  - completed: every cue gained a native **Split at scrub time** action. When the live scrub position is strictly inside that cue, the action replaces it with two contiguous cues covering the exact original range; both preserve text and spatial values, the first preserves the original id, and the second receives a fresh id. Boundary/outside/not-ready positions are rejected without mutation. A successful split refreshes the sorted list and live preview and persists through existing localStorage. No text splitting, automatic timing choice, backend, dependency, framework, upload, account, or new persistence mechanism
+  - verified 2026-08-13: `node --check script.js`; every `tools/verify-*.js` harness including new `tools/verify-cue-split.js`; `bash -n tools/*.sh`; `git diff --check`. The new harness extracts the shipped split helper verbatim and proves exact contiguous coverage, text/spatial preservation, original/fresh id handling, source immutability, and rejection at both boundaries, outside the cue, and for non-finite time; it also asserts live-scrub/action/list/preview/localStorage wiring. A real static HTTP server returned `200` for `/?vtt-editor`, `/script.js`, and `/style.css`; the fetched `/script.js` passed `node --check` and contained the split helper and action
+- tags: [project:sport-frames, type:vtt-editor-cue-split, criterion:live-annotations]
+
 ### T-049.27 - Offset all WebVTT cue timings
 - status: `done`
 - goal: let reviewers synchronize an authored or imported annotation track by shifting every cue start and end by the same signed number of seconds instead of retiming cues individually
