@@ -16,6 +16,18 @@ Fields:
 
 ## Items
 
+### T-049.29 - Align a WebVTT cue end to the next cue start
+- status: `done`
+- goal: let reviewers remove a timing gap or overlap between consecutive annotations with one exact boundary-alignment action instead of manually copying the next cue's timestamp
+- source: `T-049; Sebas 2026-07-19 standing criterion: live annotations`
+- workspace: `/home/sebas/work/projects/sport-frames`
+- next_step:
+  - select the next narrow live-annotation improvement
+- notes:
+  - completed: every cue except the last chronological cue now offers **End at next cue**. The action sets that cue's end to the exact start of the next cue in sorted playback order, closing a gap or trimming an overlap while preserving text, start, spatial values, ids, and source array order. Same-start boundaries that would produce an invalid zero-duration cue are rejected without mutation. A successful alignment refreshes the sorted list and live preview and persists through existing localStorage. No automatic batch repair, text merge, backend, dependency, framework, upload, account, or new persistence mechanism
+  - verified 2026-08-14: `node --check script.js`; every `tools/verify-*.js` harness including new `tools/verify-cue-end-snap.js`; `bash -n tools/*.sh`; `git diff --check`. The new harness extracts the shipped alignment helper verbatim and proves overlap trimming, gap closing, chronological-next selection from unsorted input, complete cue-data/source-order preservation, source immutability, and rejection for the last cue, same-start next cue, and unknown id; it also asserts conditional action/list/preview/localStorage wiring. A real static HTTP server returned `200` for `/?vtt-editor`, `/script.js`, and `/style.css`; the fetched `/script.js` passed `node --check` and contained the alignment helper and action
+- tags: [project:sport-frames, type:vtt-editor-cue-end-alignment, criterion:live-annotations]
+
 ### T-049.28 - Split a WebVTT cue at the live scrub time
 - status: `done`
 - goal: let reviewers divide one long annotation at the current video position without manually copying its text and spatial placement or re-entering both timing ranges

@@ -257,6 +257,15 @@
     ];
   }
 
+  function snapCueEndToNextStart(cues, cueId) {
+    const sorted = [...cues].sort((a, b) => a.start - b.start || a.end - b.end || a.id - b.id);
+    const index = sorted.findIndex((cue) => cue.id === cueId);
+    const cue = sorted[index];
+    const next = sorted[index + 1];
+    if (!cue || !next || next.start <= cue.start) return null;
+    return cues.map((item) => item.id === cueId ? { ...item, end: next.start } : { ...item });
+  }
+
   function offsetCueTimings(cues, offset) {
     if (!Number.isFinite(offset) || cues.some((cue) => cue.start + offset < 0)) return null;
     return cues.map((cue) => ({ ...cue, start: cue.start + offset, end: cue.end + offset }));
@@ -360,9 +369,8 @@
     const fastReadingCues = findFastReadingCues(editorCues);
     const cueBodiesWithBlankLines = findCueBodiesWithBlankLines(editorCues);
     list.replaceChildren();
-    [...editorCues]
-      .sort((a, b) => a.start - b.start || a.end - b.end || a.id - b.id)
-      .forEach((cue) => {
+    const sortedCues = [...editorCues].sort((a, b) => a.start - b.start || a.end - b.end || a.id - b.id);
+    sortedCues.forEach((cue, cueIndex) => {
         const item = document.createElement("li");
         item.dataset.cueId = String(cue.id);
         const summary = document.createElement("span");
@@ -419,7 +427,10 @@
         }
         const actions = document.createElement("span");
         actions.className = "vtt-editor__item-actions";
-        actions.innerHTML = `<button type="button" data-action="go-to">Go to start</button><button type="button" data-action="split">Split at scrub time</button><button type="button" data-action="duplicate">Duplicate</button><button type="button" data-action="edit">Edit</button><button type="button" data-action="delete">Delete</button>`;
+        const snapAction = cueIndex < sortedCues.length - 1
+          ? `<button type="button" data-action="snap-end">End at next cue</button>`
+          : "";
+        actions.innerHTML = `<button type="button" data-action="go-to">Go to start</button><button type="button" data-action="split">Split at scrub time</button>${snapAction}<button type="button" data-action="duplicate">Duplicate</button><button type="button" data-action="edit">Edit</button><button type="button" data-action="delete">Delete</button>`;
         item.append(summary, actions);
         list.append(item);
       });
@@ -595,6 +606,20 @@
         updateVttAnnotation();
         saveEditorCues();
         setEditorStatus(`Duplicated cue at ${vttTimestamp(clone.start)}.`);
+        return;
+      }
+      if (button.dataset.action === "snap-end") {
+        const snapped = snapCueEndToNextStart(editorCues, id);
+        if (!snapped) {
+          setEditorStatus("The next cue cannot form a valid end time.");
+          return;
+        }
+        editorCues = snapped;
+        if (editingCueId === id) resetEditorForm({ rollback: false });
+        renderEditorCues();
+        updateVttAnnotation();
+        saveEditorCues();
+        setEditorStatus("Cue end aligned to the next cue start.");
         return;
       }
       if (button.dataset.action === "split") {
