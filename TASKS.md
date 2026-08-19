@@ -16,6 +16,19 @@ Fields:
 
 ## Items
 
+### T-049.30 - Merge a WebVTT cue with the next cue
+
+- status: `done`
+- goal: let reviewers combine two consecutive annotations into one cue in a single action, giving a concrete fix for the overlap (T-049.15) and near-duplicate (T-049.20) warnings instead of only flagging them
+- source: `T-049; Sebas 2026-07-19 standing criterion: live annotations`
+- workspace: `/home/sebas/work/projects/sport-frames`
+- next_step:
+  - select the next narrow live-annotation improvement
+- notes:
+  - completed: every cue except the last chronological cue now offers **Merge with next**. The action combines that cue with the next cue in sorted playback order into a single cue: the merged cue starts at the earlier cue's start, ends at the later of the two ends (so a fully-contained next cue does not truncate the range), joins both texts on separate lines, keeps the first cue's id and spatial (x/y/size) values, and drops the second cue. If either cue being merged is mid-edit, the form resets without rollback. A successful merge refreshes the sorted list, live preview, and persists through existing localStorage. No text-conflict resolution, automatic merge suggestion, backend, dependency, framework, upload, account, or new persistence mechanism
+  - verified 2026-08-19: `node --check script.js`; every `tools/verify-*.js` harness including new `tools/verify-cue-merge.js`; `bash -n tools/*.sh`; `git diff --check`. The new harness extracts the shipped `mergeCueWithNext` verbatim and proves text concatenation, full-range end selection (including a next cue fully contained inside the current one), id/spatial preservation from the first cue, source immutability, and rejection for the last cue, a single-cue list, and an unknown id; it also asserts the conditional merge action, click-handler wiring (helper invocation, list/preview/localStorage refresh, status line), and edit-form reset when either merged cue was being edited. A real static HTTP server returned `200` for `/?vtt-editor`, `/script.js`, and `/style.css`; the fetched `/script.js` passed `node --check` and contained `mergeCueWithNext` and the Merge with next button
+- tags: [project:sport-frames, type:vtt-editor-cue-merge, criterion:live-annotations]
+
 ### T-049.29 - Align a WebVTT cue end to the next cue start
 - status: `done`
 - goal: let reviewers remove a timing gap or overlap between consecutive annotations with one exact boundary-alignment action instead of manually copying the next cue's timestamp

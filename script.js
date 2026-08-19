@@ -266,6 +266,24 @@
     return cues.map((item) => item.id === cueId ? { ...item, end: next.start } : { ...item });
   }
 
+  function mergeCueWithNext(cues, cueId) {
+    const sorted = [...cues].sort((a, b) => a.start - b.start || a.end - b.end || a.id - b.id);
+    const index = sorted.findIndex((cue) => cue.id === cueId);
+    const cue = sorted[index];
+    const next = sorted[index + 1];
+    if (!cue || !next) return null;
+    const merged = {
+      id: cue.id,
+      start: cue.start,
+      end: Math.max(cue.end, next.end),
+      text: `${cue.text}\n${next.text}`,
+      x: cue.x,
+      y: cue.y,
+      size: cue.size
+    };
+    return cues.filter((item) => item.id !== cue.id && item.id !== next.id).concat(merged);
+  }
+
   function offsetCueTimings(cues, offset) {
     if (!Number.isFinite(offset) || cues.some((cue) => cue.start + offset < 0)) return null;
     return cues.map((cue) => ({ ...cue, start: cue.start + offset, end: cue.end + offset }));
@@ -428,7 +446,7 @@
         const actions = document.createElement("span");
         actions.className = "vtt-editor__item-actions";
         const snapAction = cueIndex < sortedCues.length - 1
-          ? `<button type="button" data-action="snap-end">End at next cue</button>`
+          ? `<button type="button" data-action="snap-end">End at next cue</button><button type="button" data-action="merge-next">Merge with next</button>`
           : "";
         actions.innerHTML = `<button type="button" data-action="go-to">Go to start</button><button type="button" data-action="split">Split at scrub time</button>${snapAction}<button type="button" data-action="duplicate">Duplicate</button><button type="button" data-action="edit">Edit</button><button type="button" data-action="delete">Delete</button>`;
         item.append(summary, actions);
@@ -620,6 +638,22 @@
         updateVttAnnotation();
         saveEditorCues();
         setEditorStatus("Cue end aligned to the next cue start.");
+        return;
+      }
+      if (button.dataset.action === "merge-next") {
+        const sorted = [...editorCues].sort((a, b) => a.start - b.start || a.end - b.end || a.id - b.id);
+        const next = sorted[sorted.findIndex((item) => item.id === id) + 1];
+        const merged = mergeCueWithNext(editorCues, id);
+        if (!merged) {
+          setEditorStatus("There is no next cue to merge with.");
+          return;
+        }
+        if (editingCueId === id || (next && editingCueId === next.id)) resetEditorForm({ rollback: false });
+        editorCues = merged;
+        renderEditorCues();
+        updateVttAnnotation();
+        saveEditorCues();
+        setEditorStatus("Merged cue with the next cue.");
         return;
       }
       if (button.dataset.action === "split") {

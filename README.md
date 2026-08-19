@@ -106,7 +106,10 @@ temporalmente mediante las APIs nativas de archivos y `<track>`, sin subirlo ni 
 Usá **Abrir editor WebVTT** en la página (`/?vtt-editor` sigue abriéndolo directamente). **Use scrub
 time** captura el segundo visible como inicio o fin; con el editor abierto, `I` marca el inicio y `O`
 marca el fin sin sacar el foco del video (los atajos no actúan al escribir en un campo). La lista
-permite editar texto/timing, retimear y eliminar cues. **Offset all cues** desplaza todos los inicios y finales por la misma cantidad de segundos para sincronizar una pista; rechaza desplazamientos que llevarían un cue antes de `0.000s`. **Undo delete** restaura una vez el último cue eliminado o el último **Clear all cues**. **Apply to video** reemplaza la pista WebVTT activa con los cues actuales;
+permite editar texto/timing, retimear y eliminar cues. **Merge with next** combina un cue con el
+siguiente cronológico en uno solo (texto unido en líneas separadas, timing desde el inicio del
+primero hasta el fin más tardío de ambos), útil para resolver los avisos de solapamiento o
+timing casi duplicado con una sola acción. **Offset all cues** desplaza todos los inicios y finales por la misma cantidad de segundos para sincronizar una pista; rechaza desplazamientos que llevarían un cue antes de `0.000s`. **Undo delete** restaura una vez el último cue eliminado o el último **Clear all cues**. **Apply to video** reemplaza la pista WebVTT activa con los cues actuales;
 **Download .vtt** guarda el mismo `WEBVTT`, siempre ordenado por inicio. Los cues persisten sólo en
 `localStorage` de ese browser: no hay cuenta, backend, subida ni dependencia externa.
 
