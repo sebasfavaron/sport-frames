@@ -19,9 +19,9 @@ assert.deepEqual(JSON.parse(JSON.stringify(restoredAfterDelete)), JSON.parse(JSO
 const restoredAfterClear = context.snapshotCues([{ id: 1, start: 0, end: 1, text: "A", x: 50, y: 8, size: 60 }, { id: 2, start: 2, end: 3, text: "B", x: 20, y: 30, size: 40 }]);
 assert.equal(restoredAfterClear.length, 2, "clear-all snapshot restores every cue");
 
-assert.match(script, /data-action="undo-destructive" disabled/, "undo starts disabled");
+assert.match(script, /data-action="undo-destructive" disabled>Undo destructive action/, "generic undo starts disabled");
 assert.match(script, /setDestructiveUndoSnapshot\(editorCues\);\n        editorCues = editorCues\.filter/, "delete snapshots before mutation");
 assert.match(script, /setDestructiveUndoSnapshot\(editorCues\);\n      editorCues = \[\];/, "clear-all snapshots after confirmation and before mutation");
 assert.match(script, /destructiveUndoSnapshot = null;\n      event\.currentTarget\.disabled = true;/, "undo is one-shot");
-assert.match(script, /renderEditorCues\(\);\n      updateVttAnnotation\(\);\n      saveEditorCues\(\);\n      setEditorStatus\("Last delete restored\."\);/, "undo refreshes preview, persistence, and status");
+assert.match(script, /renderEditorCues\(\);\n      updateVttAnnotation\(\);\n      saveEditorCues\(\);\n      setEditorStatus\("Last destructive action undone\."\);/, "undo refreshes preview, persistence, and generic status");
 console.log("destructive cue undo verification: pass");

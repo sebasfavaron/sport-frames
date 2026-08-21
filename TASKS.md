@@ -16,6 +16,19 @@ Fields:
 
 ## Items
 
+### T-049.31 - Undo a WebVTT cue merge
+
+- status: `done`
+- goal: let reviewers recover the complete two-cue state after accidentally using **Merge with next**, reusing the editor's existing one-shot destructive undo instead of adding a separate history system
+- source: `T-049; Sebas 2026-07-19 standing criterion: live annotations`
+- workspace: `/home/sebas/work/projects/sport-frames`
+- next_step:
+  - select the next narrow live-annotation improvement
+- notes:
+  - completed: a successful **Merge with next** now snapshots the complete cue list immediately before mutation, so the existing one-shot undo restores both original cues with their exact ids, timing, text, and spatial values. Invalid merge attempts do not replace prior undo state. The control and restoration status now use action-neutral wording (**Undo destructive action**) because the same mechanism covers cue deletion, confirmed clear-all, and merge. A later destructive action still replaces the older snapshot. No multi-level history, redo, backend, dependency, framework, upload, account, or persistence change
+  - verified 2026-08-21: `node --check script.js`; every `tools/verify-*.js` harness including new `tools/verify-cue-merge-undo.js`; `bash -n tools/*.sh`; `git diff --check`. The new harness asserts snapshot-after-validation/before-mutation ordering, full-list restoration through the existing clone path, one-shot consumption, generic control/status wording, and list/preview/localStorage refresh wiring; the existing destructive-undo and merge harnesses remain green. A real static HTTP server returned `200` for `/?vtt-editor`, `/script.js`, and `/style.css`; the fetched `/script.js` passed `node --check` and contained the merge snapshot wiring and **Undo destructive action** control
+- tags: [project:sport-frames, type:vtt-editor-cue-merge-undo, criterion:live-annotations]
+
 ### T-049.30 - Merge a WebVTT cue with the next cue
 
 - status: `done`

@@ -525,7 +525,7 @@
         <span class="vtt-editor__offset"><label>Offset all cues (seconds)<input type="number" step="0.001" value="0" data-offset></label><button type="button" data-action="offset-all">Shift timings</button></span>
         <button type="button" data-export="apply">Apply to video</button>
         <button type="button" data-export="download">Download .vtt</button>
-        <button type="button" data-action="undo-destructive" disabled>Undo delete</button>
+        <button type="button" data-action="undo-destructive" disabled>Undo destructive action</button>
         <button type="button" data-action="clear-all">Clear all cues</button>
       </div>
       <ol class="vtt-editor__list"></ol>
@@ -648,6 +648,7 @@
           setEditorStatus("There is no next cue to merge with.");
           return;
         }
+        setDestructiveUndoSnapshot(editorCues);
         if (editingCueId === id || (next && editingCueId === next.id)) resetEditorForm({ rollback: false });
         editorCues = merged;
         renderEditorCues();
@@ -728,7 +729,7 @@
       renderEditorCues();
       updateVttAnnotation();
       saveEditorCues();
-      setEditorStatus("Last delete restored.");
+      setEditorStatus("Last destructive action undone.");
     });
     vttEditor.querySelector('[data-action="clear-all"]').addEventListener("click", () => {
       if (!editorCues.length) {
