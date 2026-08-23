@@ -317,6 +317,10 @@
     return event.key.toLowerCase() === "i" ? "start" : event.key.toLowerCase() === "o" ? "end" : null;
   }
 
+  function isCueSubmitShortcut(event, form) {
+    return event.key === "Enter" && (event.ctrlKey || event.metaKey) && !event.altKey && !event.repeat && form.contains(event.target);
+  }
+
   function setEditorStatus(message) {
     if (vttEditor) vttEditor.querySelector(".vtt-editor__status").textContent = message;
   }
@@ -497,7 +501,7 @@
     vttEditor.setAttribute("aria-label", "WebVTT cue editor");
     vttEditor.innerHTML = `
       <header><strong>WebVTT cue editor</strong><span class="vtt-editor__live">00:00:00.000</span></header>
-      <span class="vtt-editor__shortcuts"><kbd>I</kbd> mark in · <kbd>O</kbd> mark out</span>
+      <span class="vtt-editor__shortcuts"><kbd>I</kbd> mark in · <kbd>O</kbd> mark out · <kbd>Ctrl/Cmd</kbd>+<kbd>Enter</kbd> save cue</span>
       <form>
         <label>Start (seconds)<input name="start" type="number" min="0" step="0.001" required></label>
         <button type="button" data-set-time="start">Use scrub time</button>
@@ -546,6 +550,11 @@
       if (!field) return;
       event.preventDefault();
       setFormTime(field);
+    });
+    form.addEventListener("keydown", (event) => {
+      if (!isCueSubmitShortcut(event, form)) return;
+      event.preventDefault();
+      form.requestSubmit();
     });
     vttEditor.querySelectorAll("[data-nudge-x], [data-nudge-y]").forEach((button) => {
       button.addEventListener("click", () => {

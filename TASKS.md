@@ -16,6 +16,19 @@ Fields:
 
 ## Items
 
+### T-049.32 - Submit a WebVTT cue with Ctrl/Cmd+Enter
+
+- status: `done`
+- goal: let reviewers add or update the cue currently in the editor form with Ctrl+Enter or Cmd+Enter, reusing the existing native form validation and submit path instead of reaching for the save button while typing
+- source: `T-049; Sebas standing criterion: live annotations; worker-selected narrow slice 2026-08-23`
+- workspace: `/home/sebas/work/projects/sport-frames`
+- next_step:
+  - select the next narrow live-annotation improvement
+- notes:
+  - completed: the editor's visible shortcut map now documents **Ctrl/Cmd+Enter save cue**. Ctrl+Enter and Cmd+Enter while focus is inside the cue form call native `requestSubmit()`, preserving the existing validation and add/update handler. Plain Enter, outside-form events, Alt-modified input, and key repeats remain untouched. No new save logic, global shortcut system, backend, dependency, framework, upload, account, or persistence change
+  - verified 2026-08-23: `node --check script.js` and the new `tools/verify-cue-submit-shortcut.js`; every `tools/verify-*.js` harness; `bash -n tools/*.sh`; `git diff --check`. The new harness extracts the shipped shortcut predicate verbatim and proves Ctrl/Cmd acceptance plus outside-form, plain Enter, unrelated key, Alt, and repeat rejection; it also asserts the visible key map and `requestSubmit()` wiring into the existing submit handler. A real static HTTP server returned `200` for `/?vtt-editor`, `/script.js`, and `/style.css`; the fetched `/script.js` passed `node --check` and contained the shortcut predicate and visible key map
+- tags: [project:sport-frames, type:vtt-editor-submit-shortcut, criterion:live-annotations]
+
 ### T-049.31 - Undo a WebVTT cue merge
 
 - status: `done`
