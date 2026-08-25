@@ -321,6 +321,22 @@
     return event.key === "Enter" && (event.ctrlKey || event.metaKey) && !event.altKey && !event.repeat && form.contains(event.target);
   }
 
+  function cueEditNavigationDirection(event, form) {
+    if (event.repeat || !event.altKey || event.ctrlKey || event.metaKey || event.shiftKey || !form.contains(event.target)) return null;
+    if (event.key === "ArrowDown") return "next";
+    if (event.key === "ArrowUp") return "prev";
+    return null;
+  }
+
+  function adjacentCueInDirection(cues, cueId, direction) {
+    const sorted = [...cues].sort((a, b) => a.start - b.start || a.end - b.end || a.id - b.id);
+    const index = sorted.findIndex((item) => item.id === cueId);
+    if (index === -1) return null;
+    const targetIndex = direction === "next" ? index + 1 : index - 1;
+    if (targetIndex < 0 || targetIndex >= sorted.length) return null;
+    return { cue: sorted[targetIndex], position: targetIndex + 1, total: sorted.length };
+  }
+
   function setEditorStatus(message) {
     if (vttEditor) vttEditor.querySelector(".vtt-editor__status").textContent = message;
   }
@@ -378,6 +394,22 @@
     vttEditor.querySelector("form").reset();
     vttEditor.querySelector(".vtt-editor__save").textContent = "Add cue";
     vttEditor.querySelector(".vtt-editor__cancel").hidden = true;
+  }
+
+  function startEditingCue(cue) {
+    if (!vttEditor) return;
+    const form = vttEditor.querySelector("form");
+    editingCueId = cue.id;
+    editingCueOriginal = { ...cue };
+    form.elements.start.value = cue.start.toFixed(3);
+    form.elements.end.value = cue.end.toFixed(3);
+    form.elements.text.value = cue.text;
+    const spatial = cueSpatial(cue);
+    form.elements.x.value = spatial.x;
+    form.elements.y.value = spatial.y;
+    form.elements.size.value = spatial.size;
+    vttEditor.querySelector(".vtt-editor__save").textContent = "Update cue";
+    vttEditor.querySelector(".vtt-editor__cancel").hidden = false;
   }
 
   function renderEditorCues() {
@@ -501,7 +533,7 @@
     vttEditor.setAttribute("aria-label", "WebVTT cue editor");
     vttEditor.innerHTML = `
       <header><strong>WebVTT cue editor</strong><span class="vtt-editor__live">00:00:00.000</span></header>
-      <span class="vtt-editor__shortcuts"><kbd>I</kbd> mark in · <kbd>O</kbd> mark out · <kbd>Ctrl/Cmd</kbd>+<kbd>Enter</kbd> save cue</span>
+      <span class="vtt-editor__shortcuts"><kbd>I</kbd> mark in · <kbd>O</kbd> mark out · <kbd>Ctrl/Cmd</kbd>+<kbd>Enter</kbd> save cue · <kbd>Alt</kbd>+<kbd>↓</kbd>/<kbd>↑</kbd> next/prev cue</span>
       <form>
         <label>Start (seconds)<input name="start" type="number" min="0" step="0.001" required></label>
         <button type="button" data-set-time="start">Use scrub time</button>
@@ -552,9 +584,25 @@
       setFormTime(field);
     });
     form.addEventListener("keydown", (event) => {
-      if (!isCueSubmitShortcut(event, form)) return;
+      if (isCueSubmitShortcut(event, form)) {
+        event.preventDefault();
+        form.requestSubmit();
+        return;
+      }
+      const direction = cueEditNavigationDirection(event, form);
+      if (!direction) return;
       event.preventDefault();
-      form.requestSubmit();
+      if (editingCueId === null) {
+        setEditorStatus("Open a cue for editing to navigate between cues.");
+        return;
+      }
+      const adjacent = adjacentCueInDirection(editorCues, editingCueId, direction);
+      if (!adjacent) {
+        setEditorStatus(direction === "next" ? "Already at the last cue." : "Already at the first cue.");
+        return;
+      }
+      startEditingCue(adjacent.cue);
+      setEditorStatus(`Editing cue ${adjacent.position} of ${adjacent.total} at ${vttTimestamp(adjacent.cue.start)}.`);
     });
     vttEditor.querySelectorAll("[data-nudge-x], [data-nudge-y]").forEach((button) => {
       button.addEventListener("click", () => {
@@ -682,17 +730,7 @@
         setEditorStatus(`Split cue at ${vttTimestamp(time)}.`);
         return;
       }
-      editingCueId = id;
-      editingCueOriginal = { ...cue };
-      form.elements.start.value = cue.start.toFixed(3);
-      form.elements.end.value = cue.end.toFixed(3);
-      form.elements.text.value = cue.text;
-      const spatial = cueSpatial(cue);
-      form.elements.x.value = spatial.x;
-      form.elements.y.value = spatial.y;
-      form.elements.size.value = spatial.size;
-      vttEditor.querySelector(".vtt-editor__save").textContent = "Update cue";
-      vttEditor.querySelector(".vtt-editor__cancel").hidden = false;
+      startEditingCue(cue);
     });
     vttEditor.querySelector('[data-action="offset-all"]').addEventListener("click", () => {
       const input = vttEditor.querySelector("[data-offset]");

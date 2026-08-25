@@ -16,6 +16,19 @@ Fields:
 
 ## Items
 
+### T-049.33 - Keyboard navigation between WebVTT cues while editing
+
+- status: `done`
+- goal: let reviewers move to the next or previous cue's edit form with a keystroke instead of reaching for the mouse to click each list item's Edit button while authoring a run of consecutive cues
+- source: `T-049; Sebas standing criterion: live annotations; worker-selected narrow slice 2026-08-25`
+- workspace: `/home/sebas/work/projects/sport-frames`
+- next_step:
+  - select the next narrow live-annotation improvement
+- notes:
+  - completed: while a cue is open for editing, **Alt+↓**/**Alt+↑** inside the editor form load the chronologically next/previous cue (by start, then end, then id) into the same edit form, reusing the existing edit-load path (now factored into a shared `startEditingCue` helper also used by the list's Edit action) and existing save/cancel/rollback behavior unchanged. The shortcut only fires with focus inside the form and is ignored with Ctrl/Cmd/Shift held, on key repeat, or without an active edit, so it does not collide with the existing Ctrl/Cmd+Enter save shortcut, plain arrow-key number-input spinners, or textarea cursor movement. Reaching past either end of the sorted list reports a status message instead of wrapping. The visible shortcut map now documents **Alt+↓/↑ next/prev cue**. No cue-list reordering, multi-cue selection, backend, dependency, framework, upload, account, or persistence change
+  - verified 2026-08-25: `node --check script.js`; every `tools/verify-*.js` harness including new `tools/verify-cue-navigation.js`, and updated `tools/verify-cue-submit-shortcut.js` to match the restructured (but functionally unchanged) form keydown listener; `bash -n tools/*.sh`; `git diff --check`. The new harness extracts the shipped `cueEditNavigationDirection`/`adjacentCueInDirection` helpers verbatim and proves Alt+ArrowDown/ArrowUp acceptance, outside-form/Ctrl/Cmd/Shift/unrelated-key/repeat rejection, chronological next/prev selection with 1-based position and total, and end-of-list/unknown-id rejection; it also asserts the visible shortcut map, the shared `startEditingCue` helper, and its wiring from both the keyboard shortcut and the list's Edit action. A real static HTTP server returned `200` for `/?vtt-editor`, `/script.js`, and `/style.css`; the fetched `/script.js` passed `node --check` and contained the navigation helpers and shortcut hint
+- tags: [project:sport-frames, type:vtt-editor-cue-navigation, criterion:live-annotations]
+
 ### T-049.32 - Submit a WebVTT cue with Ctrl/Cmd+Enter
 
 - status: `done`

@@ -37,8 +37,8 @@ assert.equal(context.isCueSubmitShortcut(event({ repeat: true }), form), false, 
 assert.match(script, /<kbd>Ctrl\/Cmd<\/kbd>\+<kbd>Enter<\/kbd> save cue/, "visible shortcut map documents the action");
 assert.match(
   script,
-  /form\.addEventListener\("keydown", \(event\) => \{\s*if \(!isCueSubmitShortcut\(event, form\)\) return;\s*event\.preventDefault\(\);\s*form\.requestSubmit\(\);\s*\}\);/,
-  "form keydown listener prevents the shortcut keystroke and invokes native form submission"
+  /form\.addEventListener\("keydown", \(event\) => \{\s*if \(isCueSubmitShortcut\(event, form\)\) \{\s*event\.preventDefault\(\);\s*form\.requestSubmit\(\);\s*return;\s*\}/,
+  "form keydown listener prevents the shortcut keystroke and invokes native form submission before any other keydown handling"
 );
 assert.match(script, /form\.addEventListener\("submit", \(event\) => \{/, "existing submit path remains the save path");
 
