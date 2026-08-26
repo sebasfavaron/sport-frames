@@ -561,7 +561,7 @@
         <span class="vtt-editor__offset"><label>Offset all cues (seconds)<input type="number" step="0.001" value="0" data-offset></label><button type="button" data-action="offset-all">Shift timings</button></span>
         <button type="button" data-export="apply">Apply to video</button>
         <button type="button" data-export="download">Download .vtt</button>
-        <button type="button" data-action="undo-destructive" disabled>Undo destructive action</button>
+        <button type="button" data-action="undo-destructive" disabled>Undo last cue change</button>
         <button type="button" data-action="clear-all">Clear all cues</button>
       </div>
       <ol class="vtt-editor__list"></ol>
@@ -637,8 +637,9 @@
         return;
       }
       if (editingCueId === null) {
+        setDestructiveUndoSnapshot(editorCues);
         editorCues.push({ id: nextCueId++, start, end, text, x, y, size });
-        setEditorStatus("Cue added.");
+        setEditorStatus("Cue added. Undo is available.");
       } else {
         const cue = editorCues.find((item) => item.id === editingCueId);
         Object.assign(cue, { start, end, text, x, y, size });
@@ -676,6 +677,7 @@
       }
       if (button.dataset.action === "duplicate") {
         const clone = duplicateCue(cue, nextCueId++);
+        setDestructiveUndoSnapshot(editorCues);
         editorCues.push(clone);
         renderEditorCues();
         updateVttAnnotation();
@@ -776,7 +778,7 @@
       renderEditorCues();
       updateVttAnnotation();
       saveEditorCues();
-      setEditorStatus("Last destructive action undone.");
+      setEditorStatus("Last cue change undone.");
     });
     vttEditor.querySelector('[data-action="clear-all"]').addEventListener("click", () => {
       if (!editorCues.length) {

@@ -34,7 +34,7 @@ assert.deepEqual(
 assert.match(script, /data-action="duplicate">Duplicate<\/button>/, "list item exposes a Duplicate action");
 assert.match(
   script,
-  /button\.dataset\.action === "duplicate"\) \{\s*\n\s*const clone = duplicateCue\(cue, nextCueId\+\+\);\s*\n\s*editorCues\.push\(clone\);\s*\n\s*renderEditorCues\(\);\s*\n\s*updateVttAnnotation\(\);\s*\n\s*saveEditorCues\(\);/,
+  /button\.dataset\.action === "duplicate"\) \{\s*\n\s*const clone = duplicateCue\(cue, nextCueId\+\+\);\s*\n\s*setDestructiveUndoSnapshot\(editorCues\);\s*\n\s*editorCues\.push\(clone\);\s*\n\s*renderEditorCues\(\);\s*\n\s*updateVttAnnotation\(\);\s*\n\s*saveEditorCues\(\);/,
   "click handler clones the cue, appends it, re-renders, refreshes the live preview, and persists it"
 );
 assert.match(script, /Duplicated cue at \$\{vttTimestamp\(clone\.start\)\}/, "status line reports the new cue's start time");

@@ -16,6 +16,19 @@ Fields:
 
 ## Items
 
+### T-049.34 - Undo WebVTT cue creation
+
+- status: `done`
+- goal: let reviewers undo an accidental cue add or duplicate through the editor's existing one-shot undo control
+- source: `T-049; Sebas standing criterion: live annotations; worker-selected narrow slice 2026-08-26`
+- workspace: `/home/sebas/work/projects/sport-frames`
+- next_step:
+  - select the next narrow live-annotation improvement
+- notes:
+  - completed: valid form adds and Duplicate actions now snapshot the complete cue list immediately before creation, so the existing one-shot undo removes the newly created cue and restores all prior cue data. Invalid form submissions do not replace the available undo. The control and status now use action-neutral wording (**Undo last cue change**) because undo covers creation, deletion, clear-all, and merge. A later covered action still replaces the older snapshot. No edit undo, import undo, split/alignment/offset undo, multi-level history, redo, backend, dependency, framework, upload, account, or persistence change
+  - verified 2026-08-26: `node --check script.js`; all 19 `tools/verify-*.js` harnesses including new `tools/verify-cue-creation-undo.js`; `bash -n tools/*.sh`; `git diff --check`. The new harness proves snapshot-before-mutation for valid add and duplicate, validation-before-snapshot for rejected adds, complete cloned restoration through the existing one-shot undo, generic control wording, and list/preview/localStorage refresh wiring. A real static HTTP server returned `200` for `/?vtt-editor`, `/script.js`, and `/style.css`; the fetched script contained the cue-add undo status wiring
+- tags: [project:sport-frames, type:vtt-editor-cue-creation-undo, criterion:live-annotation-generation]
+
 ### T-049.33 - Keyboard navigation between WebVTT cues while editing
 
 - status: `done`

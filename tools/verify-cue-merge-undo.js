@@ -21,7 +21,7 @@ assert.match(
   /editorCues = snapshotCues\(destructiveUndoSnapshot\);\s*destructiveUndoSnapshot = null;\s*event\.currentTarget\.disabled = true;/,
   "undo restores the full pre-merge list and remains one-shot"
 );
-assert.match(script, /Undo destructive action/, "control describes its expanded merge/delete scope");
-assert.match(script, /Last destructive action undone\./, "restoration status is action-neutral");
+assert.match(script, /Undo last cue change/, "control describes its expanded cue-change scope");
+assert.match(script, /Last cue change undone\./, "restoration status is action-neutral");
 
 console.log("cue merge undo verification: pass");
