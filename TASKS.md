@@ -16,6 +16,19 @@ Fields:
 
 ## Items
 
+### T-049.35 - Align a WebVTT cue start to the previous cue end
+
+- status: `done`
+- goal: let reviewers remove a timing gap or overlap between consecutive annotations by aligning the later cue's start to the previous cue's end
+- source: `T-049; Sebas standing criterion: live annotations; worker-selected narrow slice 2026-08-27`
+- workspace: `/home/sebas/work/projects/sport-frames`
+- next_step:
+  - select the next narrow live-annotation improvement
+- notes:
+  - completed: every cue except the first chronological cue now offers **Start at previous cue end**. The action sets that cue's start to the exact end of the previous cue in sorted playback order, closing a gap or trimming an overlap while preserving its end, text, spatial values, id, and source array order. A previous end that would produce a zero- or negative-duration cue is rejected without mutation. A successful alignment refreshes the sorted list and live preview and persists through existing localStorage. No automatic batch repair, backend, dependency, framework, upload, account, or persistence change
+  - verified 2026-08-27: `node --check script.js`; all `tools/verify-*.js` harnesses including new `tools/verify-cue-start-snap.js`; `git diff --check`. The new harness extracts the shipped `snapCueStartToPreviousEnd` helper verbatim and proves overlap trimming, gap closing, chronological-previous selection from unsorted input, cue-data/source-order preservation, source immutability, and rejection for the first cue, invalid duration, and unknown id; it also asserts conditional action/list/preview/localStorage wiring
+- tags: [project:sport-frames, type:vtt-editor-cue-start-alignment, criterion:live-annotations]
+
 ### T-049.34 - Undo WebVTT cue creation
 
 - status: `done`
