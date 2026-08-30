@@ -62,7 +62,7 @@ assert.equal(context.adjacentCueInDirection(cues, 1, "prev"), null, "no prev cue
 assert.equal(context.adjacentCueInDirection(cues, 99, "next"), null, "unknown cue id is rejected");
 assert.equal(context.adjacentCueInDirection([cues[0]], 3, "next"), null, "a single cue has no adjacent cue in either direction");
 
-assert.match(script, /<kbd>Alt<\/kbd>\+<kbd>↓<\/kbd>\/<kbd>↑<\/kbd> next\/prev cue<\/span>/, "visible shortcut map documents the navigation shortcut");
+assert.match(script, /<kbd>Alt<\/kbd>\+<kbd>↓<\/kbd>\/<kbd>↑<\/kbd> next\/prev cue/, "visible shortcut map documents the navigation shortcut");
 assert.match(script, /function startEditingCue\(cue\) \{/, "shared edit-loading helper exists");
 assert.match(script, /const direction = cueEditNavigationDirection\(event, form\);/, "form keydown listener checks the navigation shortcut");
 assert.match(

@@ -16,6 +16,19 @@ Fields:
 
 ## Items
 
+### T-049.36 - Nudge a WebVTT cue earlier or later while editing
+
+- status: `done`
+- goal: let reviewers shift the cue currently open for editing by exactly 100ms with Alt+Left/Right while preserving its duration
+- source: `T-049; Sebas standing criterion: live annotations; worker-selected narrow slice 2026-08-28`
+- workspace: `/home/sebas/work/projects/sport-frames`
+- next_step:
+  - select the next narrow live-annotation improvement
+- notes:
+  - completed: while a cue is open for editing, **Alt+Left** and **Alt+Right** shift both form timing boundaries by exactly 100ms earlier or later, preserving duration. The edit still uses the existing save or cancel path. A shift before `0.000s`, incomplete timing, invalid duration, modifiers, repeat events, and use outside the form are rejected without mutation. The visible shortcut map and README document the action. No backend, account, upload, dependency, framework, timeline, drag UI, variable nudge size, or persistence change
+  - verified 2026-08-28: `node --check script.js`; every `tools/verify-*.js` harness including new `tools/verify-cue-timing-nudge.js`; `bash -n tools/*.sh`; `git diff --check`. The new harness extracts the shipped shortcut and timing helpers verbatim and proves direction detection, shortcut guards, exact duration-preserving 100ms shifts, millisecond rounding, source immutability, and rejection before zero or for invalid values; it also asserts shortcut-map, form-field, boundary-status, and save-path wiring
+- tags: [project:sport-frames, type:vtt-editor-cue-timing-nudge, criterion:live-annotations]
+
 ### T-049.35 - Align a WebVTT cue start to the previous cue end
 
 - status: `done`

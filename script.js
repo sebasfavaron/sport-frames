@@ -337,6 +337,23 @@
     return null;
   }
 
+  function cueTimingNudgeDirection(event, form) {
+    if (event.repeat || !event.altKey || event.ctrlKey || event.metaKey || event.shiftKey || !form.contains(event.target)) return 0;
+    if (event.key === "ArrowLeft") return -0.1;
+    if (event.key === "ArrowRight") return 0.1;
+    return 0;
+  }
+
+  function nudgeCueTiming(cue, delta) {
+    if (!cue || !Number.isFinite(cue.start) || !Number.isFinite(cue.end) || cue.end <= cue.start ||
+        !Number.isFinite(delta) || cue.start + delta < 0) return null;
+    return {
+      ...cue,
+      start: Math.round((cue.start + delta) * 1000) / 1000,
+      end: Math.round((cue.end + delta) * 1000) / 1000
+    };
+  }
+
   function adjacentCueInDirection(cues, cueId, direction) {
     const sorted = [...cues].sort((a, b) => a.start - b.start || a.end - b.end || a.id - b.id);
     const index = sorted.findIndex((item) => item.id === cueId);
@@ -545,7 +562,7 @@
     vttEditor.setAttribute("aria-label", "WebVTT cue editor");
     vttEditor.innerHTML = `
       <header><strong>WebVTT cue editor</strong><span class="vtt-editor__live">00:00:00.000</span></header>
-      <span class="vtt-editor__shortcuts"><kbd>I</kbd> mark in · <kbd>O</kbd> mark out · <kbd>Ctrl/Cmd</kbd>+<kbd>Enter</kbd> save cue · <kbd>Alt</kbd>+<kbd>↓</kbd>/<kbd>↑</kbd> next/prev cue</span>
+      <span class="vtt-editor__shortcuts"><kbd>I</kbd> mark in · <kbd>O</kbd> mark out · <kbd>Ctrl/Cmd</kbd>+<kbd>Enter</kbd> save cue · <kbd>Alt</kbd>+<kbd>↓</kbd>/<kbd>↑</kbd> next/prev cue · <kbd>Alt</kbd>+<kbd>←</kbd>/<kbd>→</kbd> nudge cue 100ms</span>
       <form>
         <label>Start (seconds)<input name="start" type="number" min="0" step="0.001" required></label>
         <button type="button" data-set-time="start">Use scrub time</button>
@@ -599,6 +616,26 @@
       if (isCueSubmitShortcut(event, form)) {
         event.preventDefault();
         form.requestSubmit();
+        return;
+      }
+      const nudge = cueTimingNudgeDirection(event, form);
+      if (nudge) {
+        event.preventDefault();
+        if (editingCueId === null) {
+          setEditorStatus("Open a cue for editing to nudge its timing.");
+          return;
+        }
+        const shifted = nudgeCueTiming({
+          start: Number(form.elements.start.value),
+          end: Number(form.elements.end.value)
+        }, nudge);
+        if (!shifted) {
+          setEditorStatus("Cue needs valid timing and cannot move before 0.000s.");
+          return;
+        }
+        form.elements.start.value = shifted.start.toFixed(3);
+        form.elements.end.value = shifted.end.toFixed(3);
+        setEditorStatus(`Cue moved ${nudge < 0 ? "earlier" : "later"} by 0.100s. Save to keep the change.`);
         return;
       }
       const direction = cueEditNavigationDirection(event, form);
