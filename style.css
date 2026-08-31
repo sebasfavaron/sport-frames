@@ -237,6 +237,7 @@ html, body {
 
 .vtt-editor label { display: grid; gap: 0.2rem; }
 .vtt-editor__text,
+.vtt-editor__voice,
 .vtt-editor__position,
 .vtt-editor__form-actions { grid-column: 1 / -1; }
 

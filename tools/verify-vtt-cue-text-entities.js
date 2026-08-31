@@ -32,8 +32,8 @@ for (const [literal, escaped] of cases) {
   assert.equal(context.unescapeVttCueText(exportedPayload), literal, "re-import restores exact literal text");
 }
 
-assert.match(script, /\\n\$\{escapeVttCueText\(cue\.text\)\}/, "buildVtt uses escaping on cue payload only");
-assert.match(script, /text: unescapeVttCueText\(textLines\.join\("\\n"\)\.trim\(\)\)/, "parseVttCues decodes imported payload");
+assert.match(script, /\$\{escapeVttCueText\(cue\.text\)\}/, "buildVtt uses escaping on cue payload only");
+assert.match(script, /text: unescapeVttCueText\(body\.trim\(\)\)/, "parseVttCues decodes imported payload");
 assert.match(script, /summary\.textContent = .*\$\{cue\.text\}/, "editor summary keeps raw text through textContent");
 assert.match(script, /element\.textContent = cue\.text/, "live preview keeps raw text through textContent");
 

@@ -16,6 +16,19 @@ Fields:
 
 ## Items
 
+### T-049.37 - Editable speaker / voice label for WebVTT editor cues
+
+- status: `done`
+- goal: let reviewers attribute an annotation to a named speaker and round-trip that label through export, native WebVTT parsing, re-import, and browser persistence as a standard `<v Name>` cue voice span
+- source: `T-032 standing criterion; Sebas 2026-07-24 in-page editor override`
+- workspace: `/home/sebas/work/projects/sport-frames`
+- next_step:
+  - select the next narrow live-annotation improvement
+- notes:
+  - completed: the cue form gained an optional **Speaker** text field. A non-empty speaker is stored on the cue, shown as a `Name:` prefix in the editor list summary, persisted to `localStorage` (only when set), carried through **Duplicate** and **Merge with next** (first cue's speaker), and preserved by cancel/rollback. Export emits the standard WebVTT voice span `<v Name>` immediately before the (still separately entity-escaped) cue body; the speaker name itself is entity-escaped so reserved characters survive. Import parses a leading `<v Name>` span — including `<v.class Name>` class annotations and a trailing `</v>` — into the speaker field and strips it from the body; an anonymous `<v>` yields no speaker. Cues without a speaker export, parse, and persist byte-identically to before (no `voice` key). The live video overlay is unchanged — the speaker is an attribution attribute for WebVTT-aware players, not part of the in-page position preview. No `align`/region settings, speaker autocomplete/list, per-speaker styling, backend, account, upload, dependency, framework, or new persistence mechanism
+  - verified 2026-08-30: `node --check script.js`; `git diff --check`; `bash -n tools/*.sh`; all 22 `tools/verify-*.js` harnesses including new `tools/verify-cue-voice.js` (and `tools/verify-vtt-cue-text-entities.js` / `tools/verify-cue-creation-undo.js` updated for the restructured but semantically unchanged `buildVtt`/`parseVttCues`/cue-push lines). The new harness extracts the shipped `buildVtt`/`parseVttCues`/`saveEditorCues`/`loadPersistedCues` verbatim and proves `<v Name>` export, native-syntax parse recovery, no-speaker byte-identity, `<v.class Name></v>` handling, reserved-character escape round-trip, and localStorage persist/restore, then asserts the form field, submit read, add/update storage, edit-load, and list-summary wiring. A real static HTTP server returned `200` for `/`, `/?vtt-editor`, `/script.js`, `/style.css`, and `/index.html`; the fetched `/script.js` contained the speaker wiring
+- tags: [project:sport-frames, type:vtt-editor-cue-voice-label, criterion:live-annotation-generation]
+
 ### T-049.36 - Nudge a WebVTT cue earlier or later while editing
 
 - status: `done`
