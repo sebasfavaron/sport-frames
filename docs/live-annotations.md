@@ -293,6 +293,22 @@ When the loaded video exposes a finite duration, mark every editor cue whose sta
 - The warning is advisory only. Saving, applying, and downloading remain allowed because WebVTT permits such timings.
 - Unknown/`NaN` video duration produces no warning. No backend, account, upload, dependency, framework, or new persistence.
 
+## T-049.38: per-cue text alignment via the standard WebVTT `align:` cue setting
+
+### Decision
+
+Expose the previously hardcoded `align:center` cue setting as a per-cue **Text alignment**
+select (`start` / `center` / `end`).
+
+- Export emits the standard WebVTT `align:` cue setting; import parses `align:(start|center|end|left|right)`,
+  normalising the deprecated `left` / `right` to `start` / `end`.
+- `center` is the default: a cue with no explicit alignment stores no `align` key, persists no
+  `align` key, and exports byte-identically to before this slice.
+- The alignment carries through Duplicate and Merge with next (first cue's alignment) like the
+  speaker label, and the live in-page preview applies it as CSS `text-align`.
+- No new line/position anchor controls, no region support, no backend, account, upload,
+  dependency, framework, or new persistence mechanism.
+
 ## T-049.24: warn about blank lines inside WebVTT cue bodies
 
 ### Decision

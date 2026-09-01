@@ -238,6 +238,7 @@ html, body {
 .vtt-editor label { display: grid; gap: 0.2rem; }
 .vtt-editor__text,
 .vtt-editor__voice,
+.vtt-editor__align,
 .vtt-editor__position,
 .vtt-editor__form-actions { grid-column: 1 / -1; }
 
@@ -255,6 +256,7 @@ html, body {
 .vtt-editor__nudges { display: grid; grid-template-columns: repeat(2, auto); align-self: end; }
 
 .vtt-editor input,
+.vtt-editor select,
 .vtt-editor textarea {
   width: 100%;
   padding: 0.4rem;

@@ -39,6 +39,7 @@
   const SHORT_CUE_THRESHOLD_SECONDS = 0.15;
   const MAX_CUE_CHARACTERS_PER_SECOND = 20;
   const NEAR_DUPLICATE_CUE_TOLERANCE_SECONDS = 0.1;
+  const CUE_TEXT_ALIGN_VALUES = ["start", "center", "end"];
 
   const clamp = (n, min, max) => Math.min(max, Math.max(min, n));
   const anchorHtml = (progress) =>
@@ -123,9 +124,11 @@
     size: Number.isFinite(cue.size) ? clamp(cue.size, 1, 100) : 60
   });
 
+  const cueAlign = (cue) => (CUE_TEXT_ALIGN_VALUES.includes(cue.align) ? cue.align : "center");
+
   const cueSettings = (cue) => {
     const { x, y, size } = cueSpatial(cue);
-    return `line:${y}%,center position:${x}%,center size:${size}% align:center`;
+    return `line:${y}%,center position:${x}%,center size:${size}% align:${cueAlign(cue)}`;
   };
 
   const cueVoice = (cue) => (typeof cue.voice === "string" ? cue.voice.trim() : "");
@@ -174,6 +177,8 @@
       const line = /(?:^|\s)line:([\d.]+)%(?:,center)?(?:\s|$)/.exec(settings);
       const position = /(?:^|\s)position:([\d.]+)%(?:,center)?(?:\s|$)/.exec(settings);
       const size = /(?:^|\s)size:([\d.]+)%(?:\s|$)/.exec(settings);
+      const alignMatch = /(?:^|\s)align:(start|center|end|left|right)(?:\s|$)/.exec(settings);
+      const align = alignMatch ? ({ left: "start", right: "end" }[alignMatch[1]] || alignMatch[1]) : "center";
       i++;
       const textLines = [];
       while (i < lines.length && lines[i].trim() !== "") {
@@ -192,7 +197,8 @@
           x: position ? clamp(Number(position[1]), 0, 100) : 50,
           y: line ? clamp(Number(line[1]), 0, 100) : 8,
           size: size ? clamp(Number(size[1]), 1, 100) : 60,
-          ...(voice ? { voice } : {})
+          ...(voice ? { voice } : {}),
+          ...(align !== "center" ? { align } : {})
         });
       }
     }
@@ -259,6 +265,7 @@
     const duration = cue.end - cue.start;
     const clone = { id, start: cue.end, end: cue.end + duration, text: cue.text, x: cue.x, y: cue.y, size: cue.size };
     if (typeof cue.voice === "string" && cue.voice.trim()) clone.voice = cue.voice.trim();
+    if (CUE_TEXT_ALIGN_VALUES.includes(cue.align) && cue.align !== "center") clone.align = cue.align;
     return clone;
   }
 
@@ -304,6 +311,7 @@
       size: cue.size
     };
     if (typeof cue.voice === "string" && cue.voice.trim()) merged.voice = cue.voice.trim();
+    if (CUE_TEXT_ALIGN_VALUES.includes(cue.align) && cue.align !== "center") merged.align = cue.align;
     return cues.filter((item) => item.id !== cue.id && item.id !== next.id).concat(merged);
   }
 
@@ -418,7 +426,8 @@
         JSON.stringify(editorCues.map((cue) => {
           const { start, end, text, x, y, size } = cue;
           const voice = cueVoice(cue);
-          return { start, end, text, ...cueSpatial({ x, y, size }), ...(voice ? { voice } : {}) };
+          const align = cueAlign(cue);
+          return { start, end, text, ...cueSpatial({ x, y, size }), ...(voice ? { voice } : {}), ...(align !== "center" ? { align } : {}) };
         }))
       );
     } catch {
@@ -449,6 +458,7 @@
     form.elements.end.value = cue.end.toFixed(3);
     form.elements.text.value = cue.text;
     form.elements.voice.value = cueVoice(cue);
+    form.elements.align.value = cueAlign(cue);
     const spatial = cueSpatial(cue);
     form.elements.x.value = spatial.x;
     form.elements.y.value = spatial.y;
@@ -474,7 +484,8 @@
         item.dataset.cueId = String(cue.id);
         const summary = document.createElement("span");
         const spatial = cueSpatial(cue);
-        summary.textContent = `${vttTimestamp(cue.start)} → ${vttTimestamp(cue.end)} · x ${spatial.x}% y ${spatial.y}% · ${cueVoice(cue) ? `${cueVoice(cue)}: ` : ""}${cue.text}`;
+        const alignNote = cueAlign(cue) === "center" ? "" : ` align ${cueAlign(cue)}`;
+        summary.textContent = `${vttTimestamp(cue.start)} → ${vttTimestamp(cue.end)} · x ${spatial.x}% y ${spatial.y}%${alignNote} · ${cueVoice(cue) ? `${cueVoice(cue)}: ` : ""}${cue.text}`;
         if (overlaps.cueIds.has(cue.id)) {
           item.classList.add("is-overlapping");
           const warning = document.createElement("strong");
@@ -589,6 +600,7 @@
         <button type="button" data-set-time="end">Use scrub time</button>
         <label class="vtt-editor__text">Cue text<textarea name="text" rows="2" required></textarea></label>
         <label class="vtt-editor__voice">Speaker (optional)<input name="voice" type="text" autocomplete="off"></label>
+        <label class="vtt-editor__align">Text alignment<select name="align"><option value="start">Start</option><option value="center" selected>Center</option><option value="end">End</option></select></label>
         <fieldset class="vtt-editor__position"><legend>Position on video (%)</legend>
           <label>X<input name="x" type="number" min="0" max="100" step="1" value="50" required></label>
           <label>Y<input name="y" type="number" min="0" max="100" step="1" value="8" required></label>
@@ -697,6 +709,7 @@
       const end = Number(form.elements.end.value);
       const text = form.elements.text.value.trim();
       const voice = form.elements.voice.value.trim();
+      const align = CUE_TEXT_ALIGN_VALUES.includes(form.elements.align.value) ? form.elements.align.value : "center";
       const x = Number(form.elements.x.value);
       const y = Number(form.elements.y.value);
       const size = Number(form.elements.size.value);
@@ -708,11 +721,11 @@
       }
       if (editingCueId === null) {
         setDestructiveUndoSnapshot(editorCues);
-        editorCues.push({ id: nextCueId++, start, end, text, x, y, size, voice });
+        editorCues.push({ id: nextCueId++, start, end, text, x, y, size, voice, align });
         setEditorStatus("Cue added. Undo is available.");
       } else {
         const cue = editorCues.find((item) => item.id === editingCueId);
-        Object.assign(cue, { start, end, text, x, y, size, voice });
+        Object.assign(cue, { start, end, text, x, y, size, voice, align });
         setEditorStatus("Cue updated.");
       }
       resetEditorForm({ rollback: false });
@@ -944,11 +957,12 @@
       text: cue.text,
       x: Number.isFinite(cue.position) ? cue.position : 50,
       y: typeof cue.line === "number" && !cue.snapToLines ? cue.line : 8,
-      size: Number.isFinite(cue.size) ? cue.size : 60
+      size: Number.isFinite(cue.size) ? cue.size : 60,
+      align: typeof cue.align === "string" ? cue.align : "center"
     })) : [];
     editorCues
       .filter((cue) => video.currentTime >= cue.start && video.currentTime < cue.end)
-      .forEach((cue) => previews.push({ text: cue.text, ...cueSpatial(cue) }));
+      .forEach((cue) => previews.push({ text: cue.text, ...cueSpatial(cue), align: cueAlign(cue) }));
     vttAnnotation.replaceChildren(...previews.map((cue) => {
       const element = document.createElement("span");
       element.className = "scrolly__vtt-cue";
@@ -956,6 +970,7 @@
       element.style.left = `${cue.x}%`;
       element.style.top = `${cue.y}%`;
       element.style.width = `${cue.size}%`;
+      element.style.textAlign = cue.align || "center";
       return element;
     }));
   }

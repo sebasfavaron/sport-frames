@@ -16,6 +16,19 @@ Fields:
 
 ## Items
 
+### T-049.38 - Per-cue text alignment via the standard WebVTT `align:` cue setting
+
+- status: `done`
+- goal: let reviewers set each cue's text alignment (start/center/end) from the editor and round-trip that choice through export, native WebVTT parsing, re-import, and browser persistence as the standard `align:` cue setting, replacing the previously hardcoded `align:center`
+- source: `T-049; Sebas standing criterion: live annotations; worker-selected narrow slice 2026-09-01`
+- workspace: `/home/sebas/work/projects/sport-frames`
+- next_step:
+  - select the next narrow live-annotation improvement
+- notes:
+  - completed: the cue form gained a **Text alignment** `<select>` (`start` / `center` / `end`). A non-default alignment is stored on the cue, shown as an `align <value>` note in the editor list summary, persisted to `localStorage` (only when not `center`), carried through **Duplicate** and **Merge with next** (first cue's alignment), and preserved by cancel/rollback. `cueSettings` now emits `align:${cueAlign(cue)}` instead of the hardcoded `align:center`, so a `center` cue exports byte-identically to before and stores no `align` key. Import parses the standard `align:(start|center|end|left|right)` cue setting, normalising the deprecated `left`/`right` to `start`/`end`; an unknown value (e.g. `middle`) falls back to `center`. The live in-page overlay applies the alignment as CSS `text-align` for both authored and native active cues. No line/position anchor control change, region support, keyboard shortcut, backend, account, upload, dependency, framework, or new persistence mechanism
+  - verified 2026-09-01: `node --check script.js`; `git diff --check`; `bash -n tools/*.sh`; all 23 `tools/verify-*.js` harnesses including new `tools/verify-cue-text-align.js` (and `tools/verify-cue-voice.js` / `tools/verify-vtt-spatial-position.js` gained the `CUE_TEXT_ALIGN_VALUES` context binding, `tools/verify-cue-duplicate.js` / `tools/verify-cue-merge.js` the same binding, and `tools/verify-cue-voice.js` / `tools/verify-cue-creation-undo.js` updated push/assign regexes for the added `align` field — all functionally unchanged). The new harness extracts the shipped `cueAlign`/`cueSettings`/`buildVtt`/`parseVttCues`/`saveEditorCues`/`loadPersistedCues` verbatim and proves `align:end` export, native-syntax parse recovery, `center` byte-identity (no `align` key), unknown-value fallback, `left`/`right` normalisation, and localStorage persist/restore, then asserts the form select, submit read/validate, add/update storage, edit-load, duplicate/merge carry, and live-preview `textAlign` wiring. A real static HTTP server returned `200` for `/?vtt-editor`, `/script.js`, `/style.css`, and `/index.html`; the fetched `/script.js` contained the alignment wiring
+- tags: [project:sport-frames, type:vtt-editor-cue-text-align, criterion:live-annotations]
+
 ### T-049.37 - Editable speaker / voice label for WebVTT editor cues
 
 - status: `done`

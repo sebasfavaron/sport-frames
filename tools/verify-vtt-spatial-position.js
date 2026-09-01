@@ -31,6 +31,7 @@ const context = {
   },
   localStorage: null,
   VTT_EDITOR_STORAGE_KEY: "sport-frames:vtt-editor-cues",
+  CUE_TEXT_ALIGN_VALUES: ["start", "center", "end"],
   setEditorStatus() {}
 };
 vm.createContext(context);

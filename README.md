@@ -109,7 +109,10 @@ marca el fin sin sacar el foco del video (los atajos no actúan al escribir en u
 cue está abierto para edición, `Alt+←` / `Alt+→` mueve todo su timing 100ms antes o después sin
 cambiar la duración; guardá el cue para conservar el cambio. La lista permite editar texto/timing,
 retimear y eliminar cues. El campo opcional **Speaker** atribuye el cue a alguien y se exporta
-como el span de voz WebVTT estándar `<v Nombre>` (y se vuelve a parsear al importar). **Merge with next** combina un cue con el
+como el span de voz WebVTT estándar `<v Nombre>` (y se vuelve a parsear al importar). El selector
+**Text alignment** (`start` / `center` / `end`) se exporta como el cue setting WebVTT estándar
+`align:` y se vuelve a parsear al importar (`align:left` / `align:right` se normalizan a
+`start` / `end`); `center` es el default y no altera cues previos. **Merge with next** combina un cue con el
 siguiente cronológico en uno solo (texto unido en líneas separadas, timing desde el inicio del
 primero hasta el fin más tardío de ambos), útil para resolver los avisos de solapamiento o
 timing casi duplicado con una sola acción. **Offset all cues** desplaza todos los inicios y finales por la misma cantidad de segundos para sincronizar una pista; rechaza desplazamientos que llevarían un cue antes de `0.000s`. **Undo delete** restaura una vez el último cue eliminado o el último **Clear all cues**. **Apply to video** reemplaza la pista WebVTT activa con los cues actuales;
