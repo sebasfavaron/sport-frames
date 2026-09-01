@@ -11,7 +11,11 @@ const end = script.indexOf("\n  function offsetCueTimings", start);
 assert.notEqual(start, -1, "mergeCueWithNext exists");
 assert.notEqual(end, -1, "merge helper extraction boundary exists");
 
-const context = { CUE_TEXT_ALIGN_VALUES: ["start", "center", "end"] };
+const context = {
+  CUE_TEXT_ALIGN_VALUES: ["start", "center", "end"],
+  cueName: (cue) =>
+    (typeof cue.name === "string" ? cue.name : "").replace(/-->/g, "").replace(/[\r\n]+/g, " ").trim()
+};
 vm.runInNewContext(`${script.slice(start, end)}\nthis.mergeCueWithNext = mergeCueWithNext;`, context);
 
 const cues = [

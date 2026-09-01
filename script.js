@@ -133,6 +133,9 @@
 
   const cueVoice = (cue) => (typeof cue.voice === "string" ? cue.voice.trim() : "");
 
+  const cueName = (cue) =>
+    (typeof cue.name === "string" ? cue.name : "").replace(/-->/g, "").replace(/[\r\n]+/g, " ").trim();
+
   function escapeVttCueText(text) {
     return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   }
@@ -147,7 +150,8 @@
       .map((cue) => {
         const name = cueVoice(cue);
         const payload = `${name ? `<v ${escapeVttCueText(name)}>` : ""}${escapeVttCueText(cue.text)}`;
-        return `${vttTimestamp(cue.start)} --> ${vttTimestamp(cue.end)} ${cueSettings(cue)}\n${payload}`;
+        const identifier = cueName(cue);
+        return `${identifier ? `${identifier}\n` : ""}${vttTimestamp(cue.start)} --> ${vttTimestamp(cue.end)} ${cueSettings(cue)}\n${payload}`;
       })
       .join("\n\n");
     return `WEBVTT\n\n${body}${body ? "\n" : ""}`;
@@ -164,9 +168,16 @@
     const lines = text.replace(/^﻿/, "").replace(/\r\n/g, "\n").split("\n");
     const cues = [];
     let i = 0;
+    let pendingId = "";
     while (i < lines.length) {
       const arrowIndex = lines[i].indexOf("-->");
       if (arrowIndex === -1) {
+        const trimmed = lines[i].trim();
+        pendingId = trimmed && !trimmed.includes("-->") &&
+          !/^(?:WEBVTT|NOTE)(?:[ \t]|$)/.test(trimmed) &&
+          i + 1 < lines.length && lines[i + 1].includes("-->")
+          ? trimmed
+          : "";
         i++;
         continue;
       }
@@ -197,10 +208,12 @@
           x: position ? clamp(Number(position[1]), 0, 100) : 50,
           y: line ? clamp(Number(line[1]), 0, 100) : 8,
           size: size ? clamp(Number(size[1]), 1, 100) : 60,
+          ...(pendingId ? { name: pendingId } : {}),
           ...(voice ? { voice } : {}),
           ...(align !== "center" ? { align } : {})
         });
       }
+      pendingId = "";
     }
     return cues;
   }
@@ -266,6 +279,7 @@
     const clone = { id, start: cue.end, end: cue.end + duration, text: cue.text, x: cue.x, y: cue.y, size: cue.size };
     if (typeof cue.voice === "string" && cue.voice.trim()) clone.voice = cue.voice.trim();
     if (CUE_TEXT_ALIGN_VALUES.includes(cue.align) && cue.align !== "center") clone.align = cue.align;
+    if (cueName(cue)) clone.name = cueName(cue);
     return clone;
   }
 
@@ -312,6 +326,7 @@
     };
     if (typeof cue.voice === "string" && cue.voice.trim()) merged.voice = cue.voice.trim();
     if (CUE_TEXT_ALIGN_VALUES.includes(cue.align) && cue.align !== "center") merged.align = cue.align;
+    if (cueName(cue)) merged.name = cueName(cue);
     return cues.filter((item) => item.id !== cue.id && item.id !== next.id).concat(merged);
   }
 
@@ -427,7 +442,8 @@
           const { start, end, text, x, y, size } = cue;
           const voice = cueVoice(cue);
           const align = cueAlign(cue);
-          return { start, end, text, ...cueSpatial({ x, y, size }), ...(voice ? { voice } : {}), ...(align !== "center" ? { align } : {}) };
+          const name = cueName(cue);
+          return { start, end, text, ...cueSpatial({ x, y, size }), ...(name ? { name } : {}), ...(voice ? { voice } : {}), ...(align !== "center" ? { align } : {}) };
         }))
       );
     } catch {
@@ -458,6 +474,7 @@
     form.elements.end.value = cue.end.toFixed(3);
     form.elements.text.value = cue.text;
     form.elements.voice.value = cueVoice(cue);
+    form.elements.cueName.value = cueName(cue);
     form.elements.align.value = cueAlign(cue);
     const spatial = cueSpatial(cue);
     form.elements.x.value = spatial.x;
@@ -485,7 +502,8 @@
         const summary = document.createElement("span");
         const spatial = cueSpatial(cue);
         const alignNote = cueAlign(cue) === "center" ? "" : ` align ${cueAlign(cue)}`;
-        summary.textContent = `${vttTimestamp(cue.start)} → ${vttTimestamp(cue.end)} · x ${spatial.x}% y ${spatial.y}%${alignNote} · ${cueVoice(cue) ? `${cueVoice(cue)}: ` : ""}${cue.text}`;
+        const idNote = cueName(cue) ? `#${cueName(cue)} ` : "";
+        summary.textContent = `${idNote}${vttTimestamp(cue.start)} → ${vttTimestamp(cue.end)} · x ${spatial.x}% y ${spatial.y}%${alignNote} · ${cueVoice(cue) ? `${cueVoice(cue)}: ` : ""}${cue.text}`;
         if (overlaps.cueIds.has(cue.id)) {
           item.classList.add("is-overlapping");
           const warning = document.createElement("strong");
@@ -600,6 +618,7 @@
         <button type="button" data-set-time="end">Use scrub time</button>
         <label class="vtt-editor__text">Cue text<textarea name="text" rows="2" required></textarea></label>
         <label class="vtt-editor__voice">Speaker (optional)<input name="voice" type="text" autocomplete="off"></label>
+        <label class="vtt-editor__cue-id">Cue identifier (optional)<input name="cueName" type="text" autocomplete="off"></label>
         <label class="vtt-editor__align">Text alignment<select name="align"><option value="start">Start</option><option value="center" selected>Center</option><option value="end">End</option></select></label>
         <fieldset class="vtt-editor__position"><legend>Position on video (%)</legend>
           <label>X<input name="x" type="number" min="0" max="100" step="1" value="50" required></label>
@@ -709,6 +728,7 @@
       const end = Number(form.elements.end.value);
       const text = form.elements.text.value.trim();
       const voice = form.elements.voice.value.trim();
+      const name = form.elements.cueName.value.replace(/-->/g, "").replace(/[\r\n]+/g, " ").trim();
       const align = CUE_TEXT_ALIGN_VALUES.includes(form.elements.align.value) ? form.elements.align.value : "center";
       const x = Number(form.elements.x.value);
       const y = Number(form.elements.y.value);
@@ -721,11 +741,11 @@
       }
       if (editingCueId === null) {
         setDestructiveUndoSnapshot(editorCues);
-        editorCues.push({ id: nextCueId++, start, end, text, x, y, size, voice, align });
+        editorCues.push({ id: nextCueId++, start, end, text, x, y, size, voice, align, name });
         setEditorStatus("Cue added. Undo is available.");
       } else {
         const cue = editorCues.find((item) => item.id === editingCueId);
-        Object.assign(cue, { start, end, text, x, y, size, voice, align });
+        Object.assign(cue, { start, end, text, x, y, size, voice, align, name });
         setEditorStatus("Cue updated.");
       }
       resetEditorForm({ rollback: false });

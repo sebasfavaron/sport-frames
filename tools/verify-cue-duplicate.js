@@ -11,7 +11,11 @@ const end = script.indexOf("\n  function findCueBodiesWithBlankLines", start);
 assert.notEqual(start, -1, "duplicateCue exists");
 assert.notEqual(end, -1, "duplicateCue extraction boundary exists");
 
-const context = { CUE_TEXT_ALIGN_VALUES: ["start", "center", "end"] };
+const context = {
+  CUE_TEXT_ALIGN_VALUES: ["start", "center", "end"],
+  cueName: (cue) =>
+    (typeof cue.name === "string" ? cue.name : "").replace(/-->/g, "").replace(/[\r\n]+/g, " ").trim()
+};
 vm.runInNewContext(`${script.slice(start, end)}\nthis.duplicateCue = duplicateCue;`, context);
 
 const original = { id: 1, start: 2, end: 5, text: "Goal!", x: 30, y: 12, size: 40 };

@@ -16,6 +16,19 @@ Fields:
 
 ## Items
 
+### T-049.39 - Optional per-cue identifier line for WebVTT editor cues
+
+- status: `done`
+- goal: let reviewers name each cue with the standard WebVTT cue identifier (the optional line before the timing line) and round-trip that name through export, native WebVTT parsing, re-import, and browser persistence, so cues can be cross-referenced against a shot list or `::cue(name)` styling instead of being anonymous
+- source: `T-049; Sebas standing criterion: live annotations; worker-selected narrow slice 2026-09-01`
+- workspace: `/home/sebas/work/projects/sport-frames`
+- next_step:
+  - select the next narrow live-annotation improvement
+- notes:
+  - completed: the cue form gained an optional **Cue identifier** text field. A non-empty identifier is stored on the cue as `name`, shown as a `#id` prefix in the editor list summary, persisted to `localStorage` (only when set), carried through **Duplicate** and **Merge with next** (first cue's identifier), and preserved by cancel/rollback. `buildVtt` emits the identifier as a plain line immediately before the `HH:MM:SS.mmm -->` timing line; a cue with no identifier exports byte-identically to before (no line, no `name` key). `parseVttCues` tracks a `pendingId`: a non-empty, non-`-->`, non-`WEBVTT`/`NOTE` line whose next line contains `-->` becomes that cue's identifier and is stripped from the block. The shared `cueName` helper sanitises reserved sequences (`-->` removed, newlines collapsed to a space, trimmed) on read, export, persist, and form submit, and coerces a non-string to `""`. The identifier is metadata for WebVTT-aware players and the shot list, so the in-page video overlay is unchanged. No cue-identifier autocomplete/uniqueness enforcement, `::cue` styling UI, region support, backend, account, upload, dependency, framework, or new persistence mechanism
+  - verified 2026-09-01: `node --check script.js`; `git diff --check`; `bash -n tools/*.sh`; all 24 `tools/verify-*.js` harnesses including new `tools/verify-cue-identifier.js` (and `tools/verify-cue-voice.js` / `tools/verify-cue-text-align.js` / `tools/verify-cue-creation-undo.js` push/assign regexes extended by `, name`, and `tools/verify-cue-duplicate.js` / `tools/verify-cue-merge.js` given a `cueName` context shim — all functionally unchanged). The new harness extracts the shipped `cueName`/`buildVtt`/`parseVttCues`/`saveEditorCues`/`loadPersistedCues`/`duplicateCue`/`mergeCueWithNext` verbatim and proves identifier-line export, native-syntax parse recovery (including a numeric SRT-style id and per-cue non-leaking identifiers), no-identifier byte-identity, `WEBVTT` header non-capture, `-->`/newline/non-string sanitisation, localStorage persist/restore, and Duplicate/Merge carry, then asserts the form field, submit read, add/update storage, edit-load, list-summary, and buildVtt/parseVttCues wiring. A real static HTTP server returned `200` for `/?vtt-editor`, `/script.js`, `/style.css`, and `/index.html`; the fetched `/script.js` contained the identifier wiring
+- tags: [project:sport-frames, type:vtt-editor-cue-identifier, criterion:live-annotations]
+
 ### T-049.38 - Per-cue text alignment via the standard WebVTT `align:` cue setting
 
 - status: `done`

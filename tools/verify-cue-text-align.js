@@ -112,8 +112,8 @@ assert.doesNotMatch(stored, /align/, "centered cue is stored without an align ke
 // UI / handler wiring assertions against the shipped source.
 assert.match(source, /<label class="vtt-editor__align">Text alignment<select name="align">/, "form exposes a text-alignment select");
 assert.match(source, /const align = CUE_TEXT_ALIGN_VALUES\.includes\(form\.elements\.align\.value\)/, "submit validates and reads the alignment");
-assert.match(source, /editorCues\.push\(\{ id: nextCueId\+\+, start, end, text, x, y, size, voice, align \}\);/, "new cue stores the alignment");
-assert.match(source, /Object\.assign\(cue, \{ start, end, text, x, y, size, voice, align \}\);/, "cue update stores the alignment");
+assert.match(source, /editorCues\.push\(\{ id: nextCueId\+\+, start, end, text, x, y, size, voice, align, name \}\);/, "new cue stores the alignment");
+assert.match(source, /Object\.assign\(cue, \{ start, end, text, x, y, size, voice, align, name \}\);/, "cue update stores the alignment");
 assert.match(source, /form\.elements\.align\.value = cueAlign\(cue\);/, "editing a cue loads its alignment into the form");
 assert.match(source, /if \(CUE_TEXT_ALIGN_VALUES\.includes\(cue\.align\) && cue\.align !== "center"\) clone\.align = cue\.align;/, "duplicate carries the alignment");
 assert.match(source, /if \(CUE_TEXT_ALIGN_VALUES\.includes\(cue\.align\) && cue\.align !== "center"\) merged\.align = cue\.align;/, "merge carries the first cue's alignment");

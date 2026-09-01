@@ -309,6 +309,26 @@ select (`start` / `center` / `end`).
 - No new line/position anchor controls, no region support, no backend, account, upload,
   dependency, framework, or new persistence mechanism.
 
+## T-049.39: optional per-cue identifier line
+
+### Decision
+
+Expose the standard [WebVTT cue identifier](https://www.w3.org/TR/webvtt1/#webvtt-cue-identifier)
+— the optional line before the timing line — as a per-cue **Cue identifier** text field.
+
+- Export writes the identifier as a plain line immediately before `HH:MM:SS.mmm -->`; import
+  captures a non-empty, non-`-->`, non-`WEBVTT`/`NOTE` line whose next line contains `-->` and
+  strips it from the cue block. Each cue keeps only its own identifier.
+- A cue with no identifier stores no `name` key, persists no `name` key, and exports
+  byte-identically to before this slice.
+- The shared `cueName` helper sanitises the value on every path: `-->` removed, newlines
+  collapsed to a space, trimmed, non-string coerced to `""`.
+- The identifier carries through Duplicate and Merge with next (first cue's identifier) like the
+  speaker label and alignment. It is player/shot-list metadata, so the in-page overlay is
+  unchanged.
+- No identifier autocomplete or uniqueness enforcement, no `::cue(name)` styling UI, no region
+  support, no backend, account, upload, dependency, framework, or new persistence mechanism.
+
 ## T-049.24: warn about blank lines inside WebVTT cue bodies
 
 ### Decision
