@@ -119,7 +119,7 @@ y se conserva en **Duplicate** y **Merge with next** (identificador del primer c
 siguiente cronológico en uno solo (texto unido en líneas separadas, timing desde el inicio del
 primero hasta el fin más tardío de ambos), útil para resolver los avisos de solapamiento o
 timing casi duplicado con una sola acción. **Offset all cues** desplaza todos los inicios y finales por la misma cantidad de segundos para sincronizar una pista; rechaza desplazamientos que llevarían un cue antes de `0.000s`. **Undo delete** restaura una vez el último cue eliminado o el último **Clear all cues**. **Apply to video** reemplaza la pista WebVTT activa con los cues actuales;
-**Download .vtt** guarda el mismo `WEBVTT`, siempre ordenado por inicio. Los cues persisten sólo en
+**Copy .vtt** copia el archivo `WEBVTT` completo y **Download .vtt** guarda el mismo contenido, siempre ordenado por inicio. Los cues persisten sólo en
 `localStorage` de ese browser: no hay cuenta, backend, subida ni dependencia externa.
 
 ## Desarrollo local

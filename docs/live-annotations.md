@@ -309,6 +309,16 @@ select (`start` / `center` / `end`).
 - No new line/position anchor controls, no region support, no backend, account, upload,
   dependency, framework, or new persistence mechanism.
 
+## T-049.40: copy the complete WebVTT file
+
+### Decision
+
+Add a **Copy .vtt** action beside Apply and Download in the existing editor export toolbar.
+
+- It writes the complete, start-time-sorted `WEBVTT` payload from the shared `buildVtt()` path to the native Clipboard API.
+- Copy failure is visible and does not alter cues. Apply and Download remain unchanged.
+- No per-cue copy, alternate export format, backend, account, upload, dependency, framework, or persistence change.
+
 ## T-049.39: optional per-cue identifier line
 
 ### Decision

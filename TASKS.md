@@ -16,6 +16,19 @@ Fields:
 
 ## Items
 
+### T-049.40 - Copy the complete WebVTT file from the cue editor
+
+- status: `done`
+- goal: let reviewers copy the complete sorted `WEBVTT` file for all editor cues to the clipboard, using the same generated payload as Apply and Download
+- source: `T-049; Sebas standing criterion: live annotations; worker-selected narrow slice 2026-09-01`
+- workspace: `/home/sebas/work/projects/sport-frames`
+- next_step:
+  - select the next narrow live-annotation improvement
+- notes:
+  - completed: the editor export toolbar gained **Copy .vtt**. It passes the shared `buildVtt()` result directly to the native Clipboard API, so one action copies the complete `WEBVTT` header and all cues in the same start-time order and format used by Apply and Download. Success reports the cue count; clipboard absence or permission failure is visible and does not alter cues. No cue model, per-cue copy, alternate format, backend, account, upload, dependency, framework, or persistence change
+  - verified 2026-09-01: `node --check script.js`; `node --check tools/verify-t04940.js`; all 25 `tools/verify-*.js` harnesses; `bash -n tools/*.sh`; `git diff --check`. The new `tools/verify-t04940.js` extracts and executes the shipped clipboard helper, proves an exact two-cue `WEBVTT` payload is written once without mutation, proves missing/denied clipboard failures, and asserts the toolbar action uses the shared full-file `buildVtt()` path plus visible success/failure status
+- tags: [project:sport-frames, type:vtt-editor-full-file-copy, criterion:live-annotations]
+
 ### T-049.39 - Optional per-cue identifier line for WebVTT editor cues
 
 - status: `done`

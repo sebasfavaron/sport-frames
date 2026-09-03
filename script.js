@@ -157,6 +157,14 @@
     return `WEBVTT\n\n${body}${body ? "\n" : ""}`;
   }
 
+  async function copyVttFile(clipboard, vttText) {
+    if (!clipboard || typeof clipboard.writeText !== "function") {
+      throw new Error("Clipboard unavailable");
+    }
+    await clipboard.writeText(vttText);
+    return vttText;
+  }
+
   function parseVttTimestamp(raw) {
     const match = /^(?:(\d+):)?(\d{2}):(\d{2})\.(\d{3})$/.exec(raw.trim());
     if (!match) return null;
@@ -640,6 +648,7 @@
         <label class="vtt-editor__import">Import .vtt<input type="file" accept="text/vtt,.vtt" data-import></label>
         <span class="vtt-editor__offset"><label>Offset all cues (seconds)<input type="number" step="0.001" value="0" data-offset></label><button type="button" data-action="offset-all">Shift timings</button></span>
         <button type="button" data-export="apply">Apply to video</button>
+        <button type="button" data-export="copy">Copy .vtt</button>
         <button type="button" data-export="download">Download .vtt</button>
         <button type="button" data-action="undo-destructive" disabled>Undo last cue change</button>
         <button type="button" data-action="clear-all">Clear all cues</button>
@@ -915,6 +924,14 @@
       replaceActiveAnnotationTrack(buildVtt());
       updateVttAnnotation();
       setEditorStatus(`Applied ${editorCues.length} cue${editorCues.length === 1 ? "" : "s"} to the video.`);
+    });
+    vttEditor.querySelector('[data-export="copy"]').addEventListener("click", async () => {
+      try {
+        await copyVttFile(navigator.clipboard, buildVtt());
+        setEditorStatus(`Copied complete WebVTT file with ${editorCues.length} cue${editorCues.length === 1 ? "" : "s"}.`);
+      } catch {
+        setEditorStatus("Clipboard unavailable; copy permission required.");
+      }
     });
     vttEditor.querySelector('[data-export="download"]').addEventListener("click", () => {
       const url = URL.createObjectURL(new Blob([buildVtt()], { type: "text/vtt" }));
