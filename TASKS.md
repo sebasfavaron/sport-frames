@@ -16,6 +16,19 @@ Fields:
 
 ## Items
 
+### T-049.41 - Flag uncovered timing gaps between consecutive WebVTT cues
+
+- status: `done`
+- goal: let reviewers spot an uncovered stretch of video longer than 1s between one annotation's end and the next annotation's start, as the display-only counterpart to the existing overlap warning, without any auto-fix or export change
+- source: `T-049; Sebas standing criterion: live annotations; worker-selected narrow slice 2026-09-07`
+- workspace: `/home/sebas/work/projects/sport-frames`
+- next_step:
+  - select the next narrow live-annotation improvement
+- notes:
+  - completed: `findCueGaps` sweeps `editorCues` in start order and measures each cue's start against the running coverage frontier (max end seen so far), so a cue fully contained inside a longer cue never opens a phantom gap and overlapping cues (negative delta) are never gaps. When `next.start - frontier > CUE_GAP_THRESHOLD_SECONDS` (1s; exactly 1s is within tolerance), the cue owning the frontier is flagged with an amber **Gap before next cue** label and the toolbar `.vtt-editor__gap-warning` reports the gap count. Display-only: no cue key added, `buildVtt` / `parseVttCues` / `saveEditorCues` untouched, so export is byte-identical and the feature round-trips vacuously. No minimum-coverage enforcement, auto-fill, blocked export, backend, account, upload, dependency, framework, or persistence change
+  - verified 2026-09-07: `node --check script.js`; `node tools/verify-t04941.js`; all 26 `tools/verify-*.js` harnesses; `bash -n tools/*.sh`; `git diff --check`. The new harness extracts `CUE_GAP_THRESHOLD_SECONDS` and `findCueGaps` verbatim and proves empty/single-cue no-op, contiguous no-gap, exact-threshold tolerance, over-threshold flags the preceding cue, unsorted handling, overlap-is-not-a-gap, contained-cue no phantom gap, coverage-frontier measurement, and multi-gap counting; it then extracts `buildVtt`/`parseVttCues`/`saveEditorCues` and asserts an export → parse → re-export byte-identical round-trip, a hand-written reference payload match, no `gap` key in persisted JSON, and the render/label/toolbar/CSS wiring
+- tags: [project:sport-frames, type:vtt-editor-cue-gap-warning, criterion:live-annotations]
+
 ### T-049.40 - Copy the complete WebVTT file from the cue editor
 
 - status: `done`

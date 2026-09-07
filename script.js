@@ -39,6 +39,7 @@
   const SHORT_CUE_THRESHOLD_SECONDS = 0.15;
   const MAX_CUE_CHARACTERS_PER_SECOND = 20;
   const NEAR_DUPLICATE_CUE_TOLERANCE_SECONDS = 0.1;
+  const CUE_GAP_THRESHOLD_SECONDS = 1;
   const CUE_TEXT_ALIGN_VALUES = ["start", "center", "end"];
 
   const clamp = (n, min, max) => Math.min(max, Math.max(min, n));
@@ -349,6 +350,25 @@
     ).map((cue) => cue.id));
   }
 
+  function findCueGaps(cues) {
+    const sorted = [...cues].sort((a, b) => a.start - b.start || a.end - b.end || a.id - b.id);
+    const cueIds = new Set();
+    let gapCount = 0;
+    let frontier = null;
+    let frontierId = null;
+    sorted.forEach((cue) => {
+      if (frontier !== null && cue.start - frontier > CUE_GAP_THRESHOLD_SECONDS) {
+        cueIds.add(frontierId);
+        gapCount++;
+      }
+      if (frontier === null || cue.end > frontier) {
+        frontier = cue.end;
+        frontierId = cue.id;
+      }
+    });
+    return { cueIds, gapCount };
+  }
+
   function currentScrubTime() {
     return Number.isFinite(video.duration) ? scrollProgress() * video.duration : 0;
   }
@@ -502,6 +522,7 @@
     const emptyCueBodies = findEmptyCueBodies(editorCues);
     const fastReadingCues = findFastReadingCues(editorCues);
     const cueBodiesWithBlankLines = findCueBodiesWithBlankLines(editorCues);
+    const cueGaps = findCueGaps(editorCues);
     list.replaceChildren();
     const sortedCues = [...editorCues].sort((a, b) => a.start - b.start || a.end - b.end || a.id - b.id);
     sortedCues.forEach((cue, cueIndex) => {
@@ -561,6 +582,13 @@
           warning.textContent = "Blank line splits WebVTT cue";
           summary.append(" ", warning);
         }
+        if (cueGaps.cueIds.has(cue.id)) {
+          item.classList.add("has-gap-after");
+          const warning = document.createElement("strong");
+          warning.className = "vtt-editor__gap-label";
+          warning.textContent = "Gap before next cue";
+          summary.append(" ", warning);
+        }
         const actions = document.createElement("span");
         actions.className = "vtt-editor__item-actions";
         const snapStartAction = cueIndex > 0
@@ -609,6 +637,11 @@
     blankLineWarning.textContent = cueBodiesWithBlankLines.size === 1
       ? "Warning: 1 cue body contains a blank line that terminates a WebVTT cue."
       : `Warning: ${cueBodiesWithBlankLines.size} cue bodies contain blank lines that terminate WebVTT cues.`;
+    const gapWarning = vttEditor.querySelector(".vtt-editor__gap-warning");
+    gapWarning.hidden = cueGaps.gapCount === 0;
+    gapWarning.textContent = cueGaps.gapCount === 1
+      ? "Warning: 1 gap longer than 1s between cues."
+      : `Warning: ${cueGaps.gapCount} gaps longer than 1s between cues.`;
   }
 
   function setupVttEditor() {
@@ -645,6 +678,7 @@
         <strong class="vtt-editor__empty-body-warning" role="status" hidden></strong>
         <strong class="vtt-editor__reading-speed-warning" role="status" hidden></strong>
         <strong class="vtt-editor__blank-line-warning" role="status" hidden></strong>
+        <strong class="vtt-editor__gap-warning" role="status" hidden></strong>
         <label class="vtt-editor__import">Import .vtt<input type="file" accept="text/vtt,.vtt" data-import></label>
         <span class="vtt-editor__offset"><label>Offset all cues (seconds)<input type="number" step="0.001" value="0" data-offset></label><button type="button" data-action="offset-all">Shift timings</button></span>
         <button type="button" data-export="apply">Apply to video</button>

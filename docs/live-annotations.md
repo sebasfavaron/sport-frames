@@ -349,3 +349,21 @@ Mark editor cues whose text contains an empty or whitespace-only line between te
 - Adjacent non-empty multiline text remains valid and is not flagged. LF and CRLF input, including whitespace-only separator lines, are covered.
 - Each affected list item shows **Blank line splits WebVTT cue**; the toolbar reports the affected cue count.
 - Advisory only: editing, applying, and downloading remain available so the reviewer controls the correction. No text mutation, backend, dependency, framework, upload, account, or persistence change.
+
+## T-049.41: flag uncovered gaps between consecutive cues
+
+### Decision
+
+Mark the cue whose end leaves an uncovered stretch longer than `CUE_GAP_THRESHOLD_SECONDS`
+(1s) before the next annotation begins.
+
+- Gap detection sweeps cues in start order and measures each cue's start against the running
+  coverage frontier (the maximum end seen so far), so a cue fully contained inside a longer cue
+  never opens a phantom gap and overlaps (negative delta) are never gaps.
+- A gap of exactly 1s is within tolerance; only a strictly longer gap is flagged. The cue that
+  precedes the gap shows **Gap before next cue**; the toolbar reports the gap count.
+- Display only, no auto-fix: this is the counterpart to the T-049.15 overlap warning. It adds no
+  cue key, changes no export byte, and does not round-trip anything — `buildVtt`, `parseVttCues`,
+  and `saveEditorCues` are untouched.
+- No minimum-coverage enforcement, blocked export, backend, dependency, framework, upload,
+  account, or persistence change.
