@@ -344,6 +344,17 @@
     return cues.map((cue) => ({ ...cue, start: cue.start + offset, end: cue.end + offset }));
   }
 
+  function retimeCueFromTimeline(cue, requestedStart, videoDuration) {
+    const duration = cue.end - cue.start;
+    if (!Number.isFinite(requestedStart) || !Number.isFinite(duration) || duration <= 0 ||
+        (Number.isFinite(videoDuration) && videoDuration > 0 && duration > videoDuration)) return null;
+    const latestStart = Number.isFinite(videoDuration) && videoDuration > 0
+      ? Math.max(0, videoDuration - duration)
+      : requestedStart;
+    const start = Math.round(clamp(requestedStart, 0, latestStart) * 1000) / 1000;
+    return { ...cue, start, end: Math.round((start + duration) * 1000) / 1000 };
+  }
+
   function findCueBodiesWithBlankLines(cues) {
     return new Set(cues.filter((cue) =>
       typeof cue.text === "string" && /(?:\r?\n)[\t ]*(?:\r?\n)/.test(cue.text)
@@ -598,7 +609,15 @@
           ? `<button type="button" data-action="snap-end">End at next cue</button><button type="button" data-action="merge-next">Merge with next</button>`
           : "";
         actions.innerHTML = `<button type="button" data-action="go-to">Go to start</button><button type="button" data-action="split">Split at scrub time</button>${snapStartAction}${nextCueActions}<button type="button" data-action="duplicate">Duplicate</button><button type="button" data-action="edit">Edit</button><button type="button" data-action="delete">Delete</button>`;
-        item.append(summary, actions);
+        const cueDuration = cue.end - cue.start;
+        const timelineEnd = Number.isFinite(video.duration) && video.duration > 0
+          ? Math.max(0, video.duration - cueDuration)
+          : Math.max(cue.start, Math.max(...editorCues.map((item) => item.end)) - cueDuration);
+        const timeline = document.createElement("label");
+        timeline.className = "vtt-editor__timeline";
+        timeline.textContent = "Drag timing";
+        timeline.innerHTML += `<input type="range" min="0" max="${Math.max(0, timelineEnd)}" step="0.001" value="${cue.start}" data-action="timeline-retime" aria-label="Drag cue timing">`;
+        item.append(summary, timeline, actions);
         list.append(item);
       });
     vttEditor.querySelector(".vtt-editor__count").textContent = `${editorCues.length} cue${editorCues.length === 1 ? "" : "s"}`;
@@ -797,6 +816,22 @@
       saveEditorCues();
     });
     vttEditor.querySelector(".vtt-editor__cancel").addEventListener("click", resetEditorForm);
+    vttEditor.querySelector(".vtt-editor__list").addEventListener("input", (event) => {
+      const slider = event.target.closest('[data-action="timeline-retime"]');
+      const item = event.target.closest("li");
+      if (!slider || !item) return;
+      const cue = editorCues.find((candidate) => candidate.id === Number(item.dataset.cueId));
+      const retimed = retimeCueFromTimeline(cue, Number(slider.value), video.duration);
+      if (!retimed) return;
+      Object.assign(cue, retimed);
+      updateVttAnnotation();
+      setEditorStatus(`Cue moved to ${vttTimestamp(cue.start)}; duration preserved.`);
+    });
+    vttEditor.querySelector(".vtt-editor__list").addEventListener("change", (event) => {
+      if (!event.target.matches('[data-action="timeline-retime"]')) return;
+      renderEditorCues();
+      saveEditorCues();
+    });
     vttEditor.querySelector(".vtt-editor__list").addEventListener("click", (event) => {
       const button = event.target.closest("button");
       const item = event.target.closest("li");

@@ -16,6 +16,19 @@ Fields:
 
 ## Items
 
+### T-049.42 - Drag a WebVTT cue to retime it on the video timeline
+
+- status: `done`
+- goal: let reviewers drag each cue across the loaded video's timeline while preserving its duration and existing metadata
+- source: `T-049; Sebas standing criterion: live annotations; worker-selected narrow slice 2026-09-08`
+- workspace: `/home/sebas/work/projects/sport-frames`
+- next_step:
+  - select the next narrow live-annotation improvement
+- notes:
+  - completed: every cue now has a native **Drag timing** range control. Dragging moves start and end together at millisecond precision, preserves duration/text/speaker/identifier/alignment/spatial data, and clamps fitting cues to zero and the known video end. Crossing another cue is allowed and handled by the existing sorted list plus overlap warning. The control adds no cue field or WebVTT syntax, so unused export remains byte-identical. No custom drag library, separate timeline view, backend, account, upload, dependency, framework, or new persistence mechanism
+  - verified 2026-09-08: `node tools/verify-t04942.js`; full verifier and shell harness suite; `git diff --check`. The new harness extracts the shipped retime helper and export/parser paths, proves duration and metadata preservation, boundary clamping, invalid-input rejection, parse round-trip, no persisted feature key, byte-identical unused export, and range-control/event wiring
+- tags: [project:sport-frames, type:vtt-editor-drag-retime, criterion:live-annotations]
+
 ### T-049.41 - Flag uncovered timing gaps between consecutive WebVTT cues
 
 - status: `done`

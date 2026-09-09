@@ -350,6 +350,17 @@ Mark editor cues whose text contains an empty or whitespace-only line between te
 - Each affected list item shows **Blank line splits WebVTT cue**; the toolbar reports the affected cue count.
 - Advisory only: editing, applying, and downloading remain available so the reviewer controls the correction. No text mutation, backend, dependency, framework, upload, account, or persistence change.
 
+## T-049.42: drag a cue to retime it on the video timeline
+
+### Decision
+
+Add one native range control per cue to move its timing across the loaded video's duration.
+
+- Dragging changes start and end together, so cue duration and all text/spatial metadata stay unchanged.
+- When the cue fits within a known video duration, movement is clamped so it cannot start before zero or end after the video. The existing sorted render path handles crossings with other cues.
+- The control changes no cue shape or WebVTT syntax. If it is not used, export is byte-identical; after use, only existing start/end values change.
+- No custom drag library, separate timeline view, backend, account, upload, dependency, framework, or new persistence mechanism.
+
 ## T-049.41: flag uncovered gaps between consecutive cues
 
 ### Decision
