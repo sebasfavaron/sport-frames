@@ -51,6 +51,6 @@ assert.match(
   "successful merge refreshes list, preview, persistence, and status"
 );
 assert.match(script, /if \(editingCueId === id \|\| \(next && editingCueId === next\.id\)\) resetEditorForm\(\{ rollback: false \}\);/, "editing either merged cue resets the form without rollback");
-assert.match(script, /cueIndex < sortedCues\.length - 1/, "final chronological cue omits merge action");
+assert.match(script, /chronologicalIndex < sortedCues\.length - 1/, "final chronological cue omits merge action");
 
 console.log("cue merge verification: pass");

@@ -16,6 +16,19 @@ Fields:
 
 ## Items
 
+### T-049.43 - Reorder WebVTT cues in the editor list
+
+- status: `done`
+- goal: let reviewers move cues up or down in the editor list without changing their timestamps, while keeping WebVTT export chronological
+- source: `T-049; Sebas standing criterion: live annotations; worker-selected narrow slice 2026-09-08`
+- workspace: `/home/sebas/work/projects/sport-frames`
+- next_step:
+  - select the next narrow live-annotation improvement
+- notes:
+  - completed: every cue now has **Move up** and **Move down** controls when that direction is available. Reordering changes only the list's stored array order; timing and all cue metadata stay unchanged. The manual order persists through existing localStorage, while Apply, Copy, and Download remain sorted by cue start as valid playback output. Timing-based navigation, merge, and boundary-alignment actions still use chronological neighbors. No drag library, timestamp mutation, backend, account, upload, dependency, framework, or new persistence mechanism
+  - verified 2026-09-08: `node tools/verify-t04943.js`; full verifier and shell harness suite; `git diff --check`. The new harness extracts the shipped reorder helper and export/storage paths, proves one-step movement, metadata and source immutability, boundary rejection, persisted manual order, chronological export, and list/action wiring
+- tags: [project:sport-frames, type:vtt-editor-list-reorder, criterion:live-annotations]
+
 ### T-049.42 - Drag a WebVTT cue to retime it on the video timeline
 
 - status: `done`

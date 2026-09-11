@@ -107,8 +107,7 @@ Usá **Abrir editor WebVTT** en la página (`/?vtt-editor` sigue abriéndolo dir
 time** captura el segundo visible como inicio o fin; con el editor abierto, `I` marca el inicio y `O`
 marca el fin sin sacar el foco del video (los atajos no actúan al escribir en un campo). Mientras un
 cue está abierto para edición, `Alt+←` / `Alt+→` mueve todo su timing 100ms antes o después sin
-cambiar la duración; guardá el cue para conservar el cambio. La lista permite editar texto/timing,
-retimear y eliminar cues. El campo opcional **Speaker** atribuye el cue a alguien y se exporta
+cambiar la duración; guardá el cue para conservar el cambio. La lista permite editar texto/timing, retimear, eliminar y mover cues hacia arriba o abajo sin cambiar sus tiempos. El orden manual se conserva en el browser; la exportación sigue el orden cronológico que requiere la pista. El campo opcional **Speaker** atribuye el cue a alguien y se exporta
 como el span de voz WebVTT estándar `<v Nombre>` (y se vuelve a parsear al importar). El campo
 opcional **Cue identifier** nombra el cue y se exporta como el identificador WebVTT estándar (la
 línea previa al timing); al importar se recupera esa línea. Se depura de `-->` y saltos de línea,

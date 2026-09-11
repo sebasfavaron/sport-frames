@@ -355,6 +355,15 @@
     return { ...cue, start, end: Math.round((start + duration) * 1000) / 1000 };
   }
 
+  function moveCueInList(cues, cueId, direction) {
+    const index = cues.findIndex((cue) => cue.id === cueId);
+    const targetIndex = direction === "up" ? index - 1 : direction === "down" ? index + 1 : -1;
+    if (index < 0 || targetIndex < 0 || targetIndex >= cues.length) return null;
+    const reordered = [...cues];
+    [reordered[index], reordered[targetIndex]] = [reordered[targetIndex], reordered[index]];
+    return reordered;
+  }
+
   function findCueBodiesWithBlankLines(cues) {
     return new Set(cues.filter((cue) =>
       typeof cue.text === "string" && /(?:\r?\n)[\t ]*(?:\r?\n)/.test(cue.text)
@@ -536,7 +545,8 @@
     const cueGaps = findCueGaps(editorCues);
     list.replaceChildren();
     const sortedCues = [...editorCues].sort((a, b) => a.start - b.start || a.end - b.end || a.id - b.id);
-    sortedCues.forEach((cue, cueIndex) => {
+    editorCues.forEach((cue, cueIndex) => {
+        const chronologicalIndex = sortedCues.findIndex((item) => item.id === cue.id);
         const item = document.createElement("li");
         item.dataset.cueId = String(cue.id);
         const summary = document.createElement("span");
@@ -602,13 +612,15 @@
         }
         const actions = document.createElement("span");
         actions.className = "vtt-editor__item-actions";
-        const snapStartAction = cueIndex > 0
+        const snapStartAction = chronologicalIndex > 0
           ? `<button type="button" data-action="snap-start">Start at previous cue end</button>`
           : "";
-        const nextCueActions = cueIndex < sortedCues.length - 1
+        const nextCueActions = chronologicalIndex < sortedCues.length - 1
           ? `<button type="button" data-action="snap-end">End at next cue</button><button type="button" data-action="merge-next">Merge with next</button>`
           : "";
-        actions.innerHTML = `<button type="button" data-action="go-to">Go to start</button><button type="button" data-action="split">Split at scrub time</button>${snapStartAction}${nextCueActions}<button type="button" data-action="duplicate">Duplicate</button><button type="button" data-action="edit">Edit</button><button type="button" data-action="delete">Delete</button>`;
+        const moveUpAction = cueIndex > 0 ? `<button type="button" data-action="move-up" aria-label="Move cue up in list">Move up</button>` : "";
+        const moveDownAction = cueIndex < editorCues.length - 1 ? `<button type="button" data-action="move-down" aria-label="Move cue down in list">Move down</button>` : "";
+        actions.innerHTML = `<button type="button" data-action="go-to">Go to start</button><button type="button" data-action="split">Split at scrub time</button>${snapStartAction}${nextCueActions}<button type="button" data-action="duplicate">Duplicate</button>${moveUpAction}${moveDownAction}<button type="button" data-action="edit">Edit</button><button type="button" data-action="delete">Delete</button>`;
         const cueDuration = cue.end - cue.start;
         const timelineEnd = Number.isFinite(video.duration) && video.duration > 0
           ? Math.max(0, video.duration - cueDuration)
@@ -838,6 +850,16 @@
       if (!button || !item) return;
       const id = Number(item.dataset.cueId);
       const cue = editorCues.find((candidate) => candidate.id === id);
+      if (button.dataset.action === "move-up" || button.dataset.action === "move-down") {
+        const direction = button.dataset.action === "move-up" ? "up" : "down";
+        const reordered = moveCueInList(editorCues, id, direction);
+        if (!reordered) return;
+        editorCues = reordered;
+        renderEditorCues();
+        saveEditorCues();
+        setEditorStatus(`Moved cue ${direction} in the list; timing unchanged.`);
+        return;
+      }
       if (button.dataset.action === "go-to") {
         setEditorStatus(
           scrollToVideoTime(cue.start)

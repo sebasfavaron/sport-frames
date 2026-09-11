@@ -35,6 +35,6 @@ assert.equal(context.snapCueEndToNextStart(cues, 99), null, "unknown cue is reje
 assert.match(script, /data-action="snap-end">End at next cue<\/button>/, "non-final list item exposes snap action");
 assert.match(script, /const snapped = snapCueEndToNextStart\(editorCues, id\);/, "action invokes shipped helper");
 assert.match(script, /editorCues = snapped;[\s\S]*?renderEditorCues\(\);\s*updateVttAnnotation\(\);\s*saveEditorCues\(\);\s*setEditorStatus\("Cue end aligned to the next cue start\."\);/, "successful snap refreshes list, preview, persistence, and status");
-assert.match(script, /cueIndex < sortedCues\.length - 1/, "final chronological cue omits snap action");
+assert.match(script, /chronologicalIndex < sortedCues\.length - 1/, "final chronological cue omits snap action");
 
 console.log("cue end snap verification: pass");
