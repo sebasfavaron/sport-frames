@@ -31,6 +31,7 @@
   let cueStart = null;
   let vttEditor = null;
   let editorCues = [];
+  let referenceMarkers = [];
   let editingCueId = null;
   let editingCueOriginal = null;
   let destructiveUndoSnapshot = null;
@@ -40,6 +41,7 @@
   const MAX_CUE_CHARACTERS_PER_SECOND = 20;
   const NEAR_DUPLICATE_CUE_TOLERANCE_SECONDS = 0.1;
   const CUE_GAP_THRESHOLD_SECONDS = 1;
+  const REFERENCE_MARKER_SNAP_TOLERANCE_SECONDS = 0.25;
   const CUE_TEXT_ALIGN_VALUES = ["start", "center", "end"];
 
   const clamp = (n, min, max) => Math.min(max, Math.max(min, n));
@@ -225,6 +227,23 @@
       pendingId = "";
     }
     return cues;
+  }
+
+  function referenceMarkersFromVtt(text) {
+    return [...new Set(parseVttCues(text).flatMap((cue) => [cue.start, cue.end]))]
+      .filter(Number.isFinite)
+      .sort((a, b) => a - b);
+  }
+
+  function snapRetimeToMarkers(cue, requestedStart, videoDuration, markers, tolerance) {
+    const retimed = retimeCueFromTimeline(cue, requestedStart, videoDuration);
+    if (!retimed || !Array.isArray(markers) || !Number.isFinite(tolerance) || tolerance < 0) return retimed;
+    const candidates = markers.flatMap((marker) => [
+      { distance: Math.abs(marker - retimed.start), start: marker },
+      { distance: Math.abs(marker - retimed.end), start: marker - (retimed.end - retimed.start) }
+    ]).filter((candidate) => candidate.distance <= tolerance);
+    candidates.sort((a, b) => a.distance - b.distance || a.start - b.start);
+    return candidates.length ? retimeCueFromTimeline(cue, candidates[0].start, videoDuration) : retimed;
   }
 
   function findCueOverlaps(cues) {
@@ -710,7 +729,9 @@
         <strong class="vtt-editor__reading-speed-warning" role="status" hidden></strong>
         <strong class="vtt-editor__blank-line-warning" role="status" hidden></strong>
         <strong class="vtt-editor__gap-warning" role="status" hidden></strong>
-        <label class="vtt-editor__import">Import .vtt<input type="file" accept="text/vtt,.vtt" data-import></label>
+        <label class="vtt-editor__import">Import cues .vtt<input type="file" accept="text/vtt,.vtt" data-import></label>
+        <label class="vtt-editor__import">Import reference markers .vtt<input type="file" accept="text/vtt,.vtt" data-import-markers></label>
+        <label class="vtt-editor__snap"><input type="checkbox" data-snap-markers checked disabled> Snap within 0.250s <span data-marker-count>(no markers)</span></label>
         <span class="vtt-editor__offset"><label>Offset all cues (seconds)<input type="number" step="0.001" value="0" data-offset></label><button type="button" data-action="offset-all">Shift timings</button></span>
         <button type="button" data-export="apply">Apply to video</button>
         <button type="button" data-export="copy">Copy .vtt</button>
@@ -754,13 +775,20 @@
           start: Number(form.elements.start.value),
           end: Number(form.elements.end.value)
         }, nudge);
-        if (!shifted) {
+        const snapEnabled = vttEditor.querySelector("[data-snap-markers]").checked;
+        const snapped = shifted && snapEnabled
+          ? snapRetimeToMarkers(shifted, shifted.start, video.duration, referenceMarkers, REFERENCE_MARKER_SNAP_TOLERANCE_SECONDS)
+          : shifted;
+        if (!snapped) {
           setEditorStatus("Cue needs valid timing and cannot move before 0.000s.");
           return;
         }
-        form.elements.start.value = shifted.start.toFixed(3);
-        form.elements.end.value = shifted.end.toFixed(3);
-        setEditorStatus(`Cue moved ${nudge < 0 ? "earlier" : "later"} by 0.100s. Save to keep the change.`);
+        form.elements.start.value = snapped.start.toFixed(3);
+        form.elements.end.value = snapped.end.toFixed(3);
+        const didSnap = snapped.start !== shifted.start;
+        setEditorStatus(didSnap
+          ? `Cue snapped to reference marker at ${vttTimestamp(snapped.start)}. Save to keep the change.`
+          : `Cue moved ${nudge < 0 ? "earlier" : "later"} by 0.100s. Save to keep the change.`);
         return;
       }
       const direction = cueEditNavigationDirection(event, form);
@@ -833,7 +861,10 @@
       const item = event.target.closest("li");
       if (!slider || !item) return;
       const cue = editorCues.find((candidate) => candidate.id === Number(item.dataset.cueId));
-      const retimed = retimeCueFromTimeline(cue, Number(slider.value), video.duration);
+      const snapEnabled = vttEditor.querySelector("[data-snap-markers]").checked;
+      const retimed = snapEnabled
+        ? snapRetimeToMarkers(cue, Number(slider.value), video.duration, referenceMarkers, REFERENCE_MARKER_SNAP_TOLERANCE_SECONDS)
+        : retimeCueFromTimeline(cue, Number(slider.value), video.duration);
       if (!retimed) return;
       Object.assign(cue, retimed);
       updateVttAnnotation();
@@ -985,6 +1016,24 @@
       updateVttAnnotation();
       saveEditorCues();
       setEditorStatus(`Imported ${parsed.length} cue${parsed.length === 1 ? "" : "s"}.`);
+    });
+    vttEditor.querySelector("[data-import-markers]").addEventListener("change", async (event) => {
+      const file = event.target.files && event.target.files[0];
+      event.target.value = "";
+      if (!file) return;
+      try {
+        referenceMarkers = referenceMarkersFromVtt(await file.text());
+      } catch {
+        referenceMarkers = [];
+      }
+      const toggle = vttEditor.querySelector("[data-snap-markers]");
+      toggle.disabled = referenceMarkers.length === 0;
+      vttEditor.querySelector("[data-marker-count]").textContent = referenceMarkers.length
+        ? `(${referenceMarkers.length} markers)`
+        : "(no markers)";
+      setEditorStatus(referenceMarkers.length
+        ? `Loaded ${referenceMarkers.length} reference markers; cues were not imported.`
+        : "No valid reference markers found in that file.");
     });
     vttEditor.querySelector('[data-action="undo-destructive"]').addEventListener("click", (event) => {
       if (!destructiveUndoSnapshot) return;

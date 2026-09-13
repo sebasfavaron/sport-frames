@@ -53,7 +53,7 @@ assert.deepEqual(cue, { id: 4, start: 1, end: 2.25, text: "Goal", x: 30 }, "sour
 
 assert.match(script, /<kbd>Alt<\/kbd>\+<kbd>←<\/kbd>\/<kbd>→<\/kbd> nudge cue 100ms/, "shortcut map documents timing nudge");
 assert.match(script, /const nudge = cueTimingNudgeDirection\(event, form\);/, "form key handler detects timing nudge");
-assert.match(script, /form\.elements\.start\.value = shifted\.start\.toFixed\(3\);\s*form\.elements\.end\.value = shifted\.end\.toFixed\(3\);/, "valid nudge updates both timing fields");
+assert.match(script, /form\.elements\.start\.value = snapped\.start\.toFixed\(3\);\s*form\.elements\.end\.value = snapped\.end\.toFixed\(3\);/, "valid nudge updates both timing fields after optional marker snapping");
 assert.match(script, /Cue needs valid timing and cannot move before 0\.000s\./, "invalid nudge explains timing and zero boundary");
 assert.match(script, /Save to keep the change\./, "status explains that normal save commits the nudge");
 

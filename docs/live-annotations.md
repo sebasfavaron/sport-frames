@@ -350,6 +350,20 @@ Mark editor cues whose text contains an empty or whitespace-only line between te
 - Each affected list item shows **Blank line splits WebVTT cue**; the toolbar reports the affected cue count.
 - Advisory only: editing, applying, and downloading remain available so the reviewer controls the correction. No text mutation, backend, dependency, framework, upload, account, or persistence change.
 
+## T-049.44: snap cue retiming to imported suggestion boundaries
+
+### Decision
+
+Let the editor load a suggestion-tool `.vtt` as temporary reference markers, without adding its
+TODO cues to the authored cue list.
+
+- Every unique cue start and end becomes a reference marker. The editor reports the marker count.
+- When enabled, timeline dragging and Alt+Left/Right timing nudges snap the moved cue's nearest
+  start or end to a marker within 0.250s while preserving cue duration and metadata.
+- The marker track stays in page memory only. It is not exported or saved to localStorage, and users
+  can disable snapping. This connects the existing FFmpeg suggestion files to manual review without
+  auto-applying suggestions, a backend, upload, account, library, or framework.
+
 ## T-049.42: drag a cue to retime it on the video timeline
 
 ### Decision

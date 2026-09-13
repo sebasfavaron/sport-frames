@@ -16,6 +16,19 @@ Fields:
 
 ## Items
 
+### T-049.44 - Snap cue retiming to imported suggestion boundaries
+
+- status: `done`
+- goal: let reviewers import an FFmpeg suggestion `.vtt` as reference-only event boundaries and optionally snap manual cue movement to a nearby boundary without adding TODO suggestions as authored cues
+- source: `T-049; Sebas standing criterion and 2026-07-24 editor override; worker-selected narrow slice 2026-09-08`
+- workspace: `/home/sebas/work/projects/sport-frames`
+- next_step:
+  - select the next narrow live-annotation improvement
+- notes:
+  - completed: the editor now has a separate **Import reference markers .vtt** input. It converts every unique suggestion cue start/end into a sorted, page-memory-only marker and reports the count without adding cues. The enabled-by-default toggle snaps timeline dragging and Alt+Left/Right timing nudges when either moved boundary is within 0.250s of the nearest marker, preserving cue duration, metadata, video bounds, export, and persisted cue state. Users can disable snapping. No automatic cue application, backend, account, upload, dependency, framework, or new persistence mechanism
+  - verified 2026-09-08: `node tools/verify-t04944.js`; full verifier and shell harness suite; `git diff --check`. The new harness extracts the shipped marker and retime helpers, proves sorted boundary de-duplication, start/end snapping, tolerance no-op, video clamping, metadata/source preservation, separate import and toggle wiring, drag/nudge integration, and exclusion from export/localStorage
+- tags: [project:sport-frames, type:vtt-editor-reference-marker-snap, criterion:live-annotations]
+
 ### T-049.43 - Reorder WebVTT cues in the editor list
 
 - status: `done`
