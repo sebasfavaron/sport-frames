@@ -209,7 +209,8 @@ html, body {
 .vtt-editor header,
 .vtt-editor__toolbar,
 .vtt-editor__form-actions,
-.vtt-editor__item-actions {
+.vtt-editor__item-actions,
+.vtt-editor__search {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -217,6 +218,8 @@ html, body {
 }
 
 .vtt-editor__toolbar { flex-wrap: wrap; }
+.vtt-editor__search { justify-content: flex-start; align-items: end; }
+.vtt-editor__search label { flex: 1; }
 
 .vtt-editor__import {
   display: inline-flex;
@@ -280,6 +283,8 @@ html, body {
   font-weight: 700;
   cursor: pointer;
 }
+
+.vtt-editor button:disabled { cursor: default; opacity: 0.45; }
 
 .vtt-editor__save,
 .vtt-editor [data-export] { background: var(--accent) !important; }

@@ -16,6 +16,19 @@ Fields:
 
 ## Items
 
+### T-049.45 - Search cue text and jump between matches
+
+- status: `done`
+- goal: let reviewers filter a long WebVTT cue list by text content and jump through matching cues at their live video positions
+- source: `T-049; Sebas standing criterion and worker-selected narrow slice 2026-09-14`
+- workspace: `/home/sebas/work/projects/sport-frames`
+- next_step:
+  - select the next narrow live-annotation improvement
+- notes:
+  - completed: the editor now has a native **Find cue text** search field that filters the visible cue list with trimmed, case-insensitive substring matching while reporting matches against the full cue count. **Previous** and **Next** cycle through the filtered matches, reveal the selected list item, and move the live scrub position to that cue's start. Clearing the field restores all cues. Search is transient UI state: it does not change cue order, timing, metadata, persistence, preview, or WebVTT output. No search index, fuzzy matching, backend, account, upload, dependency, framework, or persistence change
+  - verified 2026-09-14: `node tools/verify-t04945.js`; full verifier and shell harness suite; `git diff --check`. The new harness extracts the shipped search and navigation helpers, proves trimmed case-insensitive matching, source-order preservation, empty/unmatched queries, source immutability, previous/next selection and wrapping, result positions/counts, list filtering, match-count UI, list reveal, live-time jump, and exclusion from export/localStorage
+- tags: [project:sport-frames, type:vtt-editor-cue-text-search, criterion:live-annotations]
+
 ### T-049.44 - Snap cue retiming to imported suggestion boundaries
 
 - status: `done`

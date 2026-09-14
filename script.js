@@ -32,6 +32,7 @@
   let vttEditor = null;
   let editorCues = [];
   let referenceMarkers = [];
+  let activeSearchCueId = null;
   let editingCueId = null;
   let editingCueOriginal = null;
   let destructiveUndoSnapshot = null;
@@ -467,6 +468,22 @@
     return { cue: sorted[targetIndex], position: targetIndex + 1, total: sorted.length };
   }
 
+  function cueTextMatches(cues, query) {
+    const needle = String(query || "").trim().toLocaleLowerCase();
+    if (!needle) return cues;
+    return cues.filter((cue) => String(cue.text || "").toLocaleLowerCase().includes(needle));
+  }
+
+  function nextCueTextMatch(cues, query, cueId, direction) {
+    const matches = cueTextMatches(cues, query);
+    if (!matches.length) return null;
+    const currentIndex = matches.findIndex((cue) => cue.id === cueId);
+    const index = currentIndex === -1
+      ? (direction === "previous" ? matches.length - 1 : 0)
+      : (currentIndex + (direction === "previous" ? -1 : 1) + matches.length) % matches.length;
+    return { cue: matches[index], position: index + 1, total: matches.length };
+  }
+
   function setEditorStatus(message) {
     if (vttEditor) vttEditor.querySelector(".vtt-editor__status").textContent = message;
   }
@@ -562,9 +579,13 @@
     const fastReadingCues = findFastReadingCues(editorCues);
     const cueBodiesWithBlankLines = findCueBodiesWithBlankLines(editorCues);
     const cueGaps = findCueGaps(editorCues);
+    const searchQuery = vttEditor.querySelector("[data-cue-search]").value;
+    const visibleCues = cueTextMatches(editorCues, searchQuery);
+    const visibleCueIds = new Set(visibleCues.map((cue) => cue.id));
     list.replaceChildren();
     const sortedCues = [...editorCues].sort((a, b) => a.start - b.start || a.end - b.end || a.id - b.id);
     editorCues.forEach((cue, cueIndex) => {
+        if (!visibleCueIds.has(cue.id)) return;
         const chronologicalIndex = sortedCues.findIndex((item) => item.id === cue.id);
         const item = document.createElement("li");
         item.dataset.cueId = String(cue.id);
@@ -651,7 +672,12 @@
         item.append(summary, timeline, actions);
         list.append(item);
       });
-    vttEditor.querySelector(".vtt-editor__count").textContent = `${editorCues.length} cue${editorCues.length === 1 ? "" : "s"}`;
+    vttEditor.querySelector(".vtt-editor__count").textContent = searchQuery.trim()
+      ? `${visibleCues.length} of ${editorCues.length} cues match`
+      : `${editorCues.length} cue${editorCues.length === 1 ? "" : "s"}`;
+    vttEditor.querySelectorAll("[data-search-direction]").forEach((button) => {
+      button.disabled = !searchQuery.trim() || visibleCues.length === 0;
+    });
     const warning = vttEditor.querySelector(".vtt-editor__overlap-warning");
     warning.hidden = overlaps.pairCount === 0;
     warning.textContent = overlaps.pairCount === 1
@@ -738,6 +764,11 @@
         <button type="button" data-export="download">Download .vtt</button>
         <button type="button" data-action="undo-destructive" disabled>Undo last cue change</button>
         <button type="button" data-action="clear-all">Clear all cues</button>
+      </div>
+      <div class="vtt-editor__search">
+        <label>Find cue text<input type="search" autocomplete="off" placeholder="Search cue text" data-cue-search></label>
+        <button type="button" data-search-direction="previous" aria-label="Previous matching cue" disabled>Previous</button>
+        <button type="button" data-search-direction="next" aria-label="Next matching cue" disabled>Next</button>
       </div>
       <ol class="vtt-editor__list"></ol>
       <span class="vtt-editor__status" aria-live="polite">Saved to this browser only.</span>`;
@@ -856,6 +887,26 @@
       saveEditorCues();
     });
     vttEditor.querySelector(".vtt-editor__cancel").addEventListener("click", resetEditorForm);
+    vttEditor.querySelector("[data-cue-search]").addEventListener("input", (event) => {
+      activeSearchCueId = null;
+      renderEditorCues();
+      const matches = cueTextMatches(editorCues, event.target.value);
+      setEditorStatus(`${matches.length} matching cue${matches.length === 1 ? "" : "s"}.`);
+    });
+    vttEditor.querySelectorAll("[data-search-direction]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const match = nextCueTextMatch(editorCues, vttEditor.querySelector("[data-cue-search]").value, activeSearchCueId, button.dataset.searchDirection);
+        if (!match) {
+          setEditorStatus("No matching cues.");
+          return;
+        }
+        activeSearchCueId = match.cue.id;
+        const item = vttEditor.querySelector(`[data-cue-id="${match.cue.id}"]`);
+        if (item) item.scrollIntoView({ block: "nearest" });
+        scrollToVideoTime(match.cue.start);
+        setEditorStatus(`Match ${match.position} of ${match.total} at ${vttTimestamp(match.cue.start)}.`);
+      });
+    });
     vttEditor.querySelector(".vtt-editor__list").addEventListener("input", (event) => {
       const slider = event.target.closest('[data-action="timeline-retime"]');
       const item = event.target.closest("li");
