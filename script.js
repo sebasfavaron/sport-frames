@@ -409,6 +409,23 @@
     return { cueIds, gapCount };
   }
 
+  function findCueValidationIssues(cues, duration) {
+    const checks = [
+      [findCueOverlaps(cues).cueIds, "Overlaps another cue"],
+      [findNearDuplicateCues(cues).cueIds, "Near-duplicate timing"],
+      [findCuesPastVideoEnd(cues, duration), "Extends past video end"],
+      [findShortCues(cues), "Very short cue"],
+      [findEmptyCueBodies(cues), "Needs annotation text"],
+      [findFastReadingCues(cues), "High reading speed"],
+      [findCueBodiesWithBlankLines(cues), "Blank line splits WebVTT cue"],
+      [findCueGaps(cues).cueIds, "Gap before next cue"]
+    ];
+    return [...cues]
+      .sort((a, b) => a.start - b.start || a.end - b.end || a.id - b.id)
+      .map((cue) => ({ cue, labels: checks.filter(([ids]) => ids.has(cue.id)).map(([, label]) => label) }))
+      .filter((entry) => entry.labels.length > 0);
+  }
+
   function currentScrubTime() {
     return Number.isFinite(video.duration) ? scrollProgress() * video.duration : 0;
   }
@@ -579,6 +596,7 @@
     const fastReadingCues = findFastReadingCues(editorCues);
     const cueBodiesWithBlankLines = findCueBodiesWithBlankLines(editorCues);
     const cueGaps = findCueGaps(editorCues);
+    const validationIssues = findCueValidationIssues(editorCues, video.duration);
     const searchQuery = vttEditor.querySelector("[data-cue-search]").value;
     const visibleCues = cueTextMatches(editorCues, searchQuery);
     const visibleCueIds = new Set(visibleCues.map((cue) => cue.id));
@@ -718,6 +736,25 @@
     gapWarning.textContent = cueGaps.gapCount === 1
       ? "Warning: 1 gap longer than 1s between cues."
       : `Warning: ${cueGaps.gapCount} gaps longer than 1s between cues.`;
+    const summaryList = vttEditor.querySelector(".vtt-editor__validation-summary-list");
+    summaryList.replaceChildren();
+    validationIssues.forEach(({ cue, labels }) => {
+      const item = document.createElement("li");
+      const text = document.createElement("span");
+      text.textContent = `${vttTimestamp(cue.start)} → ${vttTimestamp(cue.end)} · ${labels.join(", ")}`;
+      const jumpButton = document.createElement("button");
+      jumpButton.type = "button";
+      jumpButton.dataset.action = "validation-jump";
+      jumpButton.dataset.cueId = String(cue.id);
+      jumpButton.textContent = "Jump to cue";
+      item.append(text, jumpButton);
+      summaryList.append(item);
+    });
+    const summaryCount = vttEditor.querySelector(".vtt-editor__validation-summary-count");
+    summaryCount.hidden = validationIssues.length === 0;
+    summaryCount.textContent = validationIssues.length === 1
+      ? "1 cue has an active warning."
+      : `${validationIssues.length} cues have active warnings.`;
   }
 
   function setupVttEditor() {
@@ -769,6 +806,10 @@
         <label>Find cue text<input type="search" autocomplete="off" placeholder="Search cue text" data-cue-search></label>
         <button type="button" data-search-direction="previous" aria-label="Previous matching cue" disabled>Previous</button>
         <button type="button" data-search-direction="next" aria-label="Next matching cue" disabled>Next</button>
+      </div>
+      <div class="vtt-editor__validation-summary">
+        <strong class="vtt-editor__validation-summary-count" role="status" hidden></strong>
+        <ol class="vtt-editor__validation-summary-list"></ol>
       </div>
       <ol class="vtt-editor__list"></ol>
       <span class="vtt-editor__status" aria-live="polite">Saved to this browser only.</span>`;
@@ -906,6 +947,19 @@
         scrollToVideoTime(match.cue.start);
         setEditorStatus(`Match ${match.position} of ${match.total} at ${vttTimestamp(match.cue.start)}.`);
       });
+    });
+    vttEditor.querySelector(".vtt-editor__validation-summary-list").addEventListener("click", (event) => {
+      const button = event.target.closest('[data-action="validation-jump"]');
+      if (!button) return;
+      const cue = editorCues.find((candidate) => candidate.id === Number(button.dataset.cueId));
+      if (!cue) return;
+      const item = vttEditor.querySelector(`.vtt-editor__list [data-cue-id="${cue.id}"]`);
+      if (item) item.scrollIntoView({ block: "nearest" });
+      setEditorStatus(
+        scrollToVideoTime(cue.start)
+          ? `Moved to cue start at ${vttTimestamp(cue.start)}.`
+          : "Video timing is not ready yet."
+      );
     });
     vttEditor.querySelector(".vtt-editor__list").addEventListener("input", (event) => {
       const slider = event.target.closest('[data-action="timeline-retime"]');

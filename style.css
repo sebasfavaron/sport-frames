@@ -362,6 +362,26 @@ html, body {
 .vtt-editor__reading-speed-label,
 .vtt-editor__blank-line-label,
 .vtt-editor__gap-label { font-size: 0.72rem; }
+.vtt-editor__validation-summary { display: flex; flex-direction: column; gap: 0.35rem; }
+.vtt-editor__validation-summary-count { color: #ffca6a; }
+.vtt-editor__validation-summary-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.vtt-editor__validation-summary-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.3rem 0.35rem;
+  border-left: 3px solid #ffb020;
+  background: rgba(255, 176, 32, 0.12);
+  font-size: 0.75rem;
+}
 .vtt-editor__item-actions { justify-content: flex-start; margin-top: 0.25rem; }
 .vtt-editor__timeline {
   grid-template-columns: auto 1fr;

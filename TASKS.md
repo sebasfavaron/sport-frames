@@ -16,6 +16,19 @@ Fields:
 
 ## Items
 
+### T-049.46 - Consolidated cue validation summary panel
+
+- status: `done`
+- goal: let reviewers see every currently-active per-cue warning (overlap, near-duplicate, past-video-end, short-cue, empty-body, reading-speed, blank-line, gap) in one place, in cue-start order, with a one-click jump to each flagged cue, instead of having to scroll the full list reading inline labels
+- source: `T-049; Sebas standing criterion and 2026-07-24 editor override; worker-selected narrow slice 2026-09-14`
+- workspace: `/home/sebas/work/projects/sport-frames`
+- next_step:
+  - select the next narrow live-annotation improvement
+- notes:
+  - completed: `findCueValidationIssues(cues, duration)` runs the eight existing `find*` warning checks (unchanged) and returns, per cue that has at least one active warning, `{ cue, labels }` sorted by cue start; cues with no warnings are omitted. The editor renders this as a new **Validation summary** panel above the main cue list: a status line reporting how many cues have active warnings, and an `<ol>` where each entry shows the cue's timestamp span, its comma-joined warning labels, and a **Jump to cue** button. Clicking that button reveals the cue's row in the main list (`scrollIntoView`) and moves the live scrub position to the cue's start, reusing the same `scrollToVideoTime` path as the existing per-cue "Go to start" action. The panel is rebuilt on every `renderEditorCues()` call, so it always reflects current cue state; it reads existing warning data only and adds no new cue field, no export change (`buildVtt` untouched), no persisted key (`saveEditorCues` untouched), no backend, account, upload, dependency, or framework. Existing inline per-cue warning labels and toolbar counters are unchanged
+  - verified 2026-09-14: `node --check script.js`; `node tools/verify-t04946.js`; all 29 `tools/verify-*.js` harnesses; `bash -n tools/*.sh`; `git diff --check`. The new harness extracts the eight shipped `find*` warning functions plus `findCueValidationIssues` verbatim into a `vm` context and proves: clean cues yield no issues; overlap/near-duplicate/short-cue/empty-body/reading-speed/blank-line/gap each independently produce the correct label; past-video-end is skipped without a known video duration; a cue with several simultaneous problems reports every applicable label; results are sorted by cue start and the source cue array is not mutated; `buildVtt`/`saveEditorCues` are untouched by the new state. It also asserts the panel/list markup, the click-to-jump wiring calling `scrollToVideoTime(cue.start)`, and the panel's CSS. A real static HTTP server returned `200` for `/?vtt-editor` and `/script.js`; the fetched `/script.js` contained the validation-summary wiring
+- tags: [project:sport-frames, type:vtt-editor-cue-validation-summary, criterion:live-annotations]
+
 ### T-049.45 - Search cue text and jump between matches
 
 - status: `done`
