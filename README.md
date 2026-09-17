@@ -118,7 +118,11 @@ y se conserva en **Duplicate** y **Merge with next** (identificador del primer c
 siguiente cronológico en uno solo (texto unido en líneas separadas, timing desde el inicio del
 primero hasta el fin más tardío de ambos), útil para resolver los avisos de solapamiento o
 timing casi duplicado con una sola acción. **Offset all cues** desplaza todos los inicios y finales por la misma cantidad de segundos para sincronizar una pista; rechaza desplazamientos que llevarían un cue antes de `0.000s`. Cada cue también tiene un control **Drag timing**: arrastralo para mover el cue sobre la duración del video sin cambiar su duración. **Undo delete** restaura una vez el último cue eliminado o el último **Clear all cues**. **Apply to video** reemplaza la pista WebVTT activa con los cues actuales;
-**Copy .vtt** copia el archivo `WEBVTT` completo y **Download .vtt** guarda el mismo contenido, siempre ordenado por inicio. Los cues persisten sólo en
+**Copy .vtt** copia el archivo `WEBVTT` completo y **Download .vtt** guarda el mismo contenido, siempre ordenado por inicio. **Import cues .srt** y **Download .srt**
+permiten mover cues hacia y desde el formato [SubRip (.srt)](https://en.wikipedia.org/wiki/SubRip), común fuera del browser: la exportación numera los cues
+secuencialmente con timestamps de coma decimal y sin línea de cue settings (SRT no tiene equivalente a `line`/`position`/`size`/`align`/identificador; un Speaker
+se exporta como prefijo de texto plano `Nombre: texto`), y la importación agrega los cues igual que la importación WebVTT existente. El video sigue usando WebVTT
+como pista activa; SRT es sólo un formato de intercambio adicional. Los cues persisten sólo en
 `localStorage` de ese browser: no hay cuenta, backend, subida ni dependencia externa.
 
 ## Desarrollo local

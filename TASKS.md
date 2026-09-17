@@ -16,6 +16,19 @@ Fields:
 
 ## Items
 
+### T-049.47 - SRT export/import alongside WebVTT in the cue editor
+
+- status: `done`
+- goal: let reviewers get cues out as a `.srt` file (the format most non-browser video tools and editors expect) and bring an existing `.srt` file's cues into the editor, without displacing WebVTT as the format the video track itself uses
+- source: `T-049; Sebas standing criterion and 2026-07-24 editor override; worker-selected narrow slice 2026-09-16`
+- workspace: `/home/sebas/work/projects/sport-frames`
+- next_step:
+  - select the next narrow live-annotation improvement
+- notes:
+  - completed: the toolbar gained **Import cues .srt** (a file input alongside the existing WebVTT import) and **Download .srt**, next to the existing WebVTT import/copy/download controls. `buildSrt()` emits the standard SubRip shape — sorted-by-start cues renumbered sequentially from `1`, `HH:MM:SS,mmm --> HH:MM:SS,mmm` comma-decimal timestamps (`srtTimestamp`, reusing the shared `vttTimestamp` digit math), and the plain cue text with no `WEBVTT` header and no WebVTT cue-settings line, since SRT has no equivalent for `line`/`position`/`size`/`align`/cue-identifier; a cue's optional speaker is exported as a plain `Name: text` prefix, SRT's closest convention to the WebVTT `<v>` voice span, rather than inventing a custom tag. `parseSrtCues`/`parseSrtTimestamp` mirror the existing `parseVttCues`/`parseVttTimestamp` shape (CRLF-normalising, index line optional, `end <= start` and empty-body blocks rejected) and hand back plain `{ start, end, text }` cues that flow through the same `editorCues.push({ id: nextCueId++, ...cue })` / render / persist path as WebVTT import, so imported SRT cues get the same default position/alignment as any cue missing that data. The video's active annotation track, `buildVtt`, and WebVTT import/export are unchanged; no new persisted field, backend, account, upload, dependency, or framework
+  - verified 2026-09-16: `node --check script.js`; `bash -n tools/*.sh`; `git diff --check`; all 32 `tools/verify-*.js` harnesses including the new `tools/verify-t04947.js`, which extracts the shipped `vttTimestamp`/`cueVoice`/`srtTimestamp`/`buildSrt`/`parseSrtTimestamp`/`parseSrtCues` verbatim into a `vm` context and proves: comma-vs-dot timestamp formatting and parsing in both directions; `buildSrt` produces chronologically sorted, sequentially renumbered blocks with no `WEBVTT` header and no cue-settings line; a voice is exported as a plain `Name:` prefix; an empty cue list yields an empty string; `parseSrtCues` round-trips a realistic multi-block file including a multi-line body; malformed blocks (`end<=start`, empty body) are rejected; a CRLF file missing its numeric index line still parses. It also asserts the import input, download button, and their event-handler wiring against the shipped source. A real static HTTP server returned `200` for `/` and `/script.js`; the fetched `/script.js` contained the `data-import-srt` and `data-export="download-srt"` wiring
+- tags: [project:sport-frames, type:vtt-editor-srt-export-import, criterion:live-annotations]
+
 ### T-049.46 - Consolidated cue validation summary panel
 
 - status: `done`

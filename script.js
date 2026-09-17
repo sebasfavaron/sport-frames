@@ -169,6 +169,52 @@
     return vttText;
   }
 
+  const srtTimestamp = (seconds) => vttTimestamp(seconds).replace(".", ",");
+
+  function buildSrt() {
+    const body = [...editorCues]
+      .sort((a, b) => a.start - b.start || a.end - b.end || a.id - b.id)
+      .map((cue, index) => {
+        const name = cueVoice(cue);
+        const text = `${name ? `${name}: ` : ""}${cue.text}`;
+        return `${index + 1}\n${srtTimestamp(cue.start)} --> ${srtTimestamp(cue.end)}\n${text}`;
+      })
+      .join("\n\n");
+    return `${body}${body ? "\n" : ""}`;
+  }
+
+  function parseSrtTimestamp(raw) {
+    const match = /^(?:(\d+):)?(\d{2}):(\d{2}),(\d{3})$/.exec(raw.trim());
+    if (!match) return null;
+    const [, hours, minutes, seconds, millis] = match;
+    return Number(hours || 0) * 3600 + Number(minutes) * 60 + Number(seconds) + Number(millis) / 1000;
+  }
+
+  function parseSrtCues(text) {
+    const lines = text.replace(/^﻿/, "").replace(/\r\n/g, "\n").split("\n");
+    const cues = [];
+    let i = 0;
+    while (i < lines.length) {
+      const arrowIndex = lines[i].indexOf("-->");
+      if (arrowIndex === -1) {
+        i++;
+        continue;
+      }
+      const start = parseSrtTimestamp(lines[i].slice(0, arrowIndex));
+      const end = parseSrtTimestamp(lines[i].slice(arrowIndex + 3).trim().split(/\s+/)[0] || "");
+      i++;
+      const textLines = [];
+      while (i < lines.length && lines[i].trim() !== "") {
+        textLines.push(lines[i]);
+        i++;
+      }
+      if (Number.isFinite(start) && Number.isFinite(end) && end > start && textLines.length) {
+        cues.push({ start, end, text: textLines.join("\n").trim() });
+      }
+    }
+    return cues;
+  }
+
   function parseVttTimestamp(raw) {
     const match = /^(?:(\d+):)?(\d{2}):(\d{2})\.(\d{3})$/.exec(raw.trim());
     if (!match) return null;
@@ -793,12 +839,14 @@
         <strong class="vtt-editor__blank-line-warning" role="status" hidden></strong>
         <strong class="vtt-editor__gap-warning" role="status" hidden></strong>
         <label class="vtt-editor__import">Import cues .vtt<input type="file" accept="text/vtt,.vtt" data-import></label>
+        <label class="vtt-editor__import">Import cues .srt<input type="file" accept=".srt,application/x-subrip,text/srt" data-import-srt></label>
         <label class="vtt-editor__import">Import reference markers .vtt<input type="file" accept="text/vtt,.vtt" data-import-markers></label>
         <label class="vtt-editor__snap"><input type="checkbox" data-snap-markers checked disabled> Snap within 0.250s <span data-marker-count>(no markers)</span></label>
         <span class="vtt-editor__offset"><label>Offset all cues (seconds)<input type="number" step="0.001" value="0" data-offset></label><button type="button" data-action="offset-all">Shift timings</button></span>
         <button type="button" data-export="apply">Apply to video</button>
         <button type="button" data-export="copy">Copy .vtt</button>
         <button type="button" data-export="download">Download .vtt</button>
+        <button type="button" data-export="download-srt">Download .srt</button>
         <button type="button" data-action="undo-destructive" disabled>Undo last cue change</button>
         <button type="button" data-action="clear-all">Clear all cues</button>
       </div>
@@ -1122,6 +1170,27 @@
       saveEditorCues();
       setEditorStatus(`Imported ${parsed.length} cue${parsed.length === 1 ? "" : "s"}.`);
     });
+    vttEditor.querySelector("[data-import-srt]").addEventListener("change", async (event) => {
+      const file = event.target.files && event.target.files[0];
+      event.target.value = "";
+      if (!file) return;
+      let parsed;
+      try {
+        parsed = parseSrtCues(await file.text());
+      } catch {
+        setEditorStatus("Could not read file.");
+        return;
+      }
+      if (!parsed.length) {
+        setEditorStatus("No valid cues found in that file.");
+        return;
+      }
+      parsed.forEach((cue) => editorCues.push({ id: nextCueId++, ...cue }));
+      renderEditorCues();
+      updateVttAnnotation();
+      saveEditorCues();
+      setEditorStatus(`Imported ${parsed.length} cue${parsed.length === 1 ? "" : "s"} from SRT.`);
+    });
     vttEditor.querySelector("[data-import-markers]").addEventListener("change", async (event) => {
       const file = event.target.files && event.target.files[0];
       event.target.value = "";
@@ -1186,6 +1255,15 @@
       link.click();
       setTimeout(() => URL.revokeObjectURL(url), 0);
       setEditorStatus("annotations.vtt downloaded.");
+    });
+    vttEditor.querySelector('[data-export="download-srt"]').addEventListener("click", () => {
+      const url = URL.createObjectURL(new Blob([buildSrt()], { type: "application/x-subrip" }));
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "annotations.srt";
+      link.click();
+      setTimeout(() => URL.revokeObjectURL(url), 0);
+      setEditorStatus("annotations.srt downloaded.");
     });
     document.body.append(vttEditor);
     vttEditorToggle.setAttribute("aria-expanded", String(!vttEditor.hidden));
