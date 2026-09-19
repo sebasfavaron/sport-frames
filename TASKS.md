@@ -16,6 +16,19 @@ Fields:
 
 ## Items
 
+### T-049.48 - Bulk select and delete WebVTT cues in the editor
+
+- status: `done`
+- goal: let a reviewer clean up a cue list with many bad entries (batch-imported junk, duplicate suggestions, etc.) in one action instead of clicking "Delete" once per cue, without adding a backend, account, upload, external library, or framework
+- source: `T-049 standing criterion; worker-selected narrow slice 2026-09-18`
+- workspace: `/home/sebas/work/projects/sport-frames`
+- next_step:
+  - select the next narrow live-annotation improvement
+- notes:
+  - completed: each cue row in the `?vtt-editor` list gained a selection checkbox; the toolbar gained a **Select all visible** checkbox (checked/indeterminate against the current search-filtered view) and a **Delete selected (N)** button. Selection is tracked in an in-memory `selectedCueIds` set that is pruned against the live cue list on every render (`pruneSelectedCueIds`) so it can never point at a cue removed by an unrelated action (single delete, merge, clear-all); it is pure UI state, never written to `localStorage`, `buildVtt`, or `buildSrt`. Deleting the selection reuses the existing destructive-change pattern: a `window.confirm` prompt, `setDestructiveUndoSnapshot` before mutating (so the existing "Undo last cue change" button restores the batch), a pure `deleteCuesByIds` helper to filter the list, resetting the edit form if the cue being edited was in the deleted set, then re-render/persist. No new import/export format, keyboard shortcut, or backend
+  - verified 2026-09-18: `node --check script.js`; `bash -n tools/*.sh`; `git diff --check`; all 33 `tools/verify-*.js` harnesses including the new `tools/verify-t04948.js`, which extracts the shipped `pruneSelectedCueIds`/`deleteCuesByIds` verbatim into a `vm` context and proves: pruning drops ids no longer present (including an all-stale and an all-empty selection) without mutating the source set; bulk delete removes exactly the targeted ids (single, multi, unknown-id no-op, and delete-everything cases) without mutating the source array. It also asserts against the shipped source that the checkbox reflects `selectedCueIds`, the select-all-visible checkbox goes indeterminate on a partial selection, the delete-selected button's label tracks the live count, the click handler confirms/snapshots/uses the pure helper/resets an in-progress edit/clears selection/persists, and that `saveEditorCues`/`buildVtt`/`buildSrt` never reference `selectedCueIds`. A real static HTTP server returned `200` for `/` and `/script.js`, and the served script contained the new `select-cue`/`select-all-visible`/`delete-selected` wiring
+- tags: [project:sport-frames, type:vtt-editor-bulk-select-delete, criterion:live-annotations]
+
 ### T-049.47 - SRT export/import alongside WebVTT in the cue editor
 
 - status: `done`

@@ -36,6 +36,7 @@
   let editingCueId = null;
   let editingCueOriginal = null;
   let destructiveUndoSnapshot = null;
+  let selectedCueIds = new Set();
   let nextCueId = 1;
   const VTT_EDITOR_STORAGE_KEY = "sport-frames:vtt-editor-cues";
   const SHORT_CUE_THRESHOLD_SECONDS = 0.15;
@@ -430,6 +431,15 @@
     return reordered;
   }
 
+  function pruneSelectedCueIds(selectedIds, cues) {
+    const validIds = new Set(cues.map((cue) => cue.id));
+    return new Set([...selectedIds].filter((id) => validIds.has(id)));
+  }
+
+  function deleteCuesByIds(cues, idsToDelete) {
+    return cues.filter((cue) => !idsToDelete.has(cue.id));
+  }
+
   function findCueBodiesWithBlankLines(cues) {
     return new Set(cues.filter((cue) =>
       typeof cue.text === "string" && /(?:\r?\n)[\t ]*(?:\r?\n)/.test(cue.text)
@@ -633,6 +643,7 @@
 
   function renderEditorCues() {
     if (!vttEditor) return;
+    selectedCueIds = pruneSelectedCueIds(selectedCueIds, editorCues);
     const list = vttEditor.querySelector(".vtt-editor__list");
     const overlaps = findCueOverlaps(editorCues);
     const nearDuplicates = findNearDuplicateCues(editorCues);
@@ -653,7 +664,13 @@
         const chronologicalIndex = sortedCues.findIndex((item) => item.id === cue.id);
         const item = document.createElement("li");
         item.dataset.cueId = String(cue.id);
+        const selectCheckbox = document.createElement("input");
+        selectCheckbox.type = "checkbox";
+        selectCheckbox.dataset.action = "select-cue";
+        selectCheckbox.setAttribute("aria-label", "Select cue for bulk actions");
+        selectCheckbox.checked = selectedCueIds.has(cue.id);
         const summary = document.createElement("span");
+        summary.className = "vtt-editor__cue-summary";
         const spatial = cueSpatial(cue);
         const alignNote = cueAlign(cue) === "center" ? "" : ` align ${cueAlign(cue)}`;
         const idNote = cueName(cue) ? `#${cueName(cue)} ` : "";
@@ -733,7 +750,7 @@
         timeline.className = "vtt-editor__timeline";
         timeline.textContent = "Drag timing";
         timeline.innerHTML += `<input type="range" min="0" max="${Math.max(0, timelineEnd)}" step="0.001" value="${cue.start}" data-action="timeline-retime" aria-label="Drag cue timing">`;
-        item.append(summary, timeline, actions);
+        item.append(selectCheckbox, summary, timeline, actions);
         list.append(item);
       });
     vttEditor.querySelector(".vtt-editor__count").textContent = searchQuery.trim()
@@ -742,6 +759,14 @@
     vttEditor.querySelectorAll("[data-search-direction]").forEach((button) => {
       button.disabled = !searchQuery.trim() || visibleCues.length === 0;
     });
+    const selectedVisibleCount = visibleCues.filter((cue) => selectedCueIds.has(cue.id)).length;
+    const selectAllVisible = vttEditor.querySelector('[data-action="select-all-visible"]');
+    selectAllVisible.disabled = visibleCues.length === 0;
+    selectAllVisible.checked = visibleCues.length > 0 && selectedVisibleCount === visibleCues.length;
+    selectAllVisible.indeterminate = selectedVisibleCount > 0 && selectedVisibleCount < visibleCues.length;
+    const deleteSelected = vttEditor.querySelector('[data-action="delete-selected"]');
+    deleteSelected.disabled = selectedCueIds.size === 0;
+    deleteSelected.textContent = `Delete selected (${selectedCueIds.size})`;
     const warning = vttEditor.querySelector(".vtt-editor__overlap-warning");
     warning.hidden = overlaps.pairCount === 0;
     warning.textContent = overlaps.pairCount === 1
@@ -849,6 +874,8 @@
         <button type="button" data-export="download-srt">Download .srt</button>
         <button type="button" data-action="undo-destructive" disabled>Undo last cue change</button>
         <button type="button" data-action="clear-all">Clear all cues</button>
+        <label class="vtt-editor__bulk-select"><input type="checkbox" data-action="select-all-visible"> Select all visible</label>
+        <button type="button" data-action="delete-selected" disabled>Delete selected (0)</button>
       </div>
       <div class="vtt-editor__search">
         <label>Find cue text<input type="search" autocomplete="off" placeholder="Search cue text" data-cue-search></label>
@@ -1228,11 +1255,42 @@
       if (!window.confirm(`Delete all ${editorCues.length} cue(s) and clear saved storage?`)) return;
       setDestructiveUndoSnapshot(editorCues);
       editorCues = [];
+      selectedCueIds.clear();
       resetEditorForm();
       renderEditorCues();
       updateVttAnnotation();
       saveEditorCues();
       setEditorStatus("All cues cleared.");
+    });
+    vttEditor.querySelector(".vtt-editor__list").addEventListener("change", (event) => {
+      const checkbox = event.target.closest('[data-action="select-cue"]');
+      const item = event.target.closest("li");
+      if (!checkbox || !item) return;
+      const id = Number(item.dataset.cueId);
+      if (checkbox.checked) selectedCueIds.add(id);
+      else selectedCueIds.delete(id);
+      renderEditorCues();
+    });
+    vttEditor.querySelector('[data-action="select-all-visible"]').addEventListener("change", (event) => {
+      const searchQuery = vttEditor.querySelector("[data-cue-search]").value;
+      const visible = cueTextMatches(editorCues, searchQuery);
+      if (event.target.checked) visible.forEach((cue) => selectedCueIds.add(cue.id));
+      else visible.forEach((cue) => selectedCueIds.delete(cue.id));
+      renderEditorCues();
+    });
+    vttEditor.querySelector('[data-action="delete-selected"]').addEventListener("click", () => {
+      if (!selectedCueIds.size) return;
+      const count = selectedCueIds.size;
+      if (!window.confirm(`Delete ${count} selected cue(s)?`)) return;
+      setDestructiveUndoSnapshot(editorCues);
+      const idsToDelete = new Set(selectedCueIds);
+      editorCues = deleteCuesByIds(editorCues, idsToDelete);
+      if (editingCueId !== null && idsToDelete.has(editingCueId)) resetEditorForm();
+      selectedCueIds.clear();
+      renderEditorCues();
+      updateVttAnnotation();
+      saveEditorCues();
+      setEditorStatus(`Deleted ${count} selected cue(s).`);
     });
     vttEditor.querySelector('[data-export="apply"]').addEventListener("click", () => {
       replaceActiveAnnotationTrack(buildVtt());

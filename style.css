@@ -317,7 +317,8 @@ html, body {
 }
 
 .vtt-editor__list li { padding-left: 0.2rem; }
-.vtt-editor__list li > span:first-child { display: block; overflow-wrap: anywhere; }
+.vtt-editor__cue-summary { display: block; overflow-wrap: anywhere; }
+.vtt-editor__list li > input[type="checkbox"] { margin-right: 0.35rem; }
 .vtt-editor__list li.is-overlapping,
 .vtt-editor__list li.is-near-duplicate,
 .vtt-editor__list li.is-past-video-end,
