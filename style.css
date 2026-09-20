@@ -306,6 +306,87 @@ html, body {
   font: inherit;
 }
 
+.vtt-editor__shortcut-help-toggle {
+  padding: 0.05rem 0.35rem;
+  color: var(--fg);
+  background: #303036;
+  border: 1px solid #4a4a50;
+  border-radius: 3px;
+  font: inherit;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.vtt-editor__shortcut-help {
+  position: fixed;
+  z-index: 30;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.55);
+}
+
+.vtt-editor__shortcut-help[hidden] { display: none; }
+
+.vtt-editor__shortcut-help-panel {
+  display: grid;
+  gap: 0.6rem;
+  width: min(24rem, 100%);
+  max-height: calc(100vh - 2rem);
+  overflow: auto;
+  padding: 0.85rem;
+  color: var(--fg);
+  background: #1c1c1f;
+  border: 1px solid #3a3a3f;
+  border-radius: 8px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+  font-size: 0.8rem;
+}
+
+.vtt-editor__shortcut-help-panel header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.vtt-editor__shortcut-help-panel header button {
+  padding: 0.1rem 0.5rem;
+  color: var(--fg);
+  background: #303036;
+  border: 0;
+  border-radius: 4px;
+  font: inherit;
+  cursor: pointer;
+}
+
+.vtt-editor__shortcut-help-list {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.35rem 0.75rem;
+  margin: 0;
+}
+
+.vtt-editor__shortcut-help-list dt {
+  white-space: nowrap;
+  color: var(--fg);
+}
+
+.vtt-editor__shortcut-help-list dt kbd {
+  padding: 0.1rem 0.3rem;
+  background: #303036;
+  border: 1px solid #4a4a50;
+  border-radius: 3px;
+  font: inherit;
+}
+
+.vtt-editor__shortcut-help-list dd {
+  margin: 0;
+  color: var(--muted);
+}
+
 .vtt-editor__list {
   display: grid;
   gap: 0.4rem;

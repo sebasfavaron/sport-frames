@@ -16,6 +16,19 @@ Fields:
 
 ## Items
 
+### T-049.49 - Keyboard shortcuts help overlay for the WebVTT cue editor
+
+- status: `done`
+- goal: let reviewers discover the many keyboard shortcuts built up across past slices (mark in/out, save, cue navigation, timing nudge) from one place in the editor, instead of relying only on the small always-visible hint line, without adding a backend, account, upload, external library, or framework
+- source: `T-049 standing criterion; worker-selected narrow slice 2026-09-20`
+- workspace: `/home/sebas/work/projects/sport-frames`
+- next_step:
+  - select the next narrow live-annotation improvement
+- notes:
+  - completed: a single `VTT_EDITOR_SHORTCUTS` array is now the one source of truth for every editor keyboard shortcut (mark in/out, Ctrl/Cmd+Enter save, Alt+↓/↑ cue navigation, Alt+←/→ timing nudge, plus the new `?` toggle and `Esc` close). The toolbar's existing compact shortcut hint is unchanged; a new **All shortcuts (?)** button sits next to it and opens a modal overlay (`role="dialog"`) built entirely from that array as a `<dl>` of key/description pairs, so the list can never drift from what's actually wired. The overlay closes via its close button, a backdrop click, or `Esc`, and the `?` key (guarded against firing while typing in an input/textarea/contenteditable, and against Alt/Ctrl/Cmd modifiers or key-repeat) toggles it from anywhere the editor is open — reusing the existing global mark-in/out `keydown` listener rather than adding a second one. Pure UI chrome: no new cue field, no export change (`buildVtt`/`buildSrt` untouched), no persisted key (`saveEditorCues` untouched), no backend, account, upload, dependency, or framework
+  - verified 2026-09-20: `node --check script.js`; `bash -n tools/*.sh`; `git diff --check`; all 34 `tools/verify-*.js` harnesses including the new `tools/verify-t04949.js`, which extracts the shipped `VTT_EDITOR_SHORTCUTS` data and `isShortcutHelpToggle` predicate verbatim into a `vm` context (with a minimal `HTMLElement` stub) and proves: every shortcut entry has real keys and a description covering all eight shipped shortcuts plus itself; `?` toggles from a plain target and with Shift held; `?` is rejected while focus is in an input/textarea/contenteditable element, with Alt/Ctrl/Cmd held, on key-repeat, or for an unrelated key. It also asserts the toggle button, the modal overlay markup, the shared-data-driven `<dl>` rendering, the toggle/close/backdrop-click wiring, the Escape-before-mark-shortcut ordering in the global keydown handler, and that the overlay never appears in `buildVtt`/`buildSrt`/`saveEditorCues`. A real static HTTP server returned `200` for `/?vtt-editor`, `/script.js`, and `/style.css`; the fetched `/script.js` contained the `toggle-shortcut-help`/`VTT_EDITOR_SHORTCUTS`/`isShortcutHelpToggle` wiring
+- tags: [project:sport-frames, type:vtt-editor-shortcut-help-overlay, criterion:live-annotations]
+
 ### T-049.48 - Bulk select and delete WebVTT cues in the editor
 
 - status: `done`

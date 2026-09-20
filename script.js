@@ -45,6 +45,17 @@
   const CUE_GAP_THRESHOLD_SECONDS = 1;
   const REFERENCE_MARKER_SNAP_TOLERANCE_SECONDS = 0.25;
   const CUE_TEXT_ALIGN_VALUES = ["start", "center", "end"];
+  const VTT_EDITOR_SHORTCUTS = [
+    { keys: ["I"], description: "Mark in — set cue start to the live scrub time" },
+    { keys: ["O"], description: "Mark out — set cue end to the live scrub time" },
+    { keys: ["Ctrl/Cmd", "Enter"], description: "Save the cue currently in the form" },
+    { keys: ["Alt", "↓"], description: "Load the next cue into the edit form" },
+    { keys: ["Alt", "↑"], description: "Load the previous cue into the edit form" },
+    { keys: ["Alt", "←"], description: "Nudge the editing cue 100ms earlier" },
+    { keys: ["Alt", "→"], description: "Nudge the editing cue 100ms later" },
+    { keys: ["?"], description: "Toggle this keyboard shortcuts overlay" },
+    { keys: ["Esc"], description: "Close this keyboard shortcuts overlay" }
+  ];
 
   const clamp = (n, min, max) => Math.min(max, Math.max(min, n));
   const anchorHtml = (progress) =>
@@ -504,6 +515,13 @@
     return event.key.toLowerCase() === "i" ? "start" : event.key.toLowerCase() === "o" ? "end" : null;
   }
 
+  function isShortcutHelpToggle(event) {
+    if (event.repeat || event.altKey || event.ctrlKey || event.metaKey) return false;
+    const target = event.target;
+    if (target instanceof HTMLElement && (target.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName))) return false;
+    return event.key === "?";
+  }
+
   function isCueSubmitShortcut(event, form) {
     return event.key === "Enter" && (event.ctrlKey || event.metaKey) && !event.altKey && !event.repeat && form.contains(event.target);
   }
@@ -835,7 +853,7 @@
     vttEditor.setAttribute("aria-label", "WebVTT cue editor");
     vttEditor.innerHTML = `
       <header><strong>WebVTT cue editor</strong><span class="vtt-editor__live">00:00:00.000</span></header>
-      <span class="vtt-editor__shortcuts"><kbd>I</kbd> mark in · <kbd>O</kbd> mark out · <kbd>Ctrl/Cmd</kbd>+<kbd>Enter</kbd> save cue · <kbd>Alt</kbd>+<kbd>↓</kbd>/<kbd>↑</kbd> next/prev cue · <kbd>Alt</kbd>+<kbd>←</kbd>/<kbd>→</kbd> nudge cue 100ms</span>
+      <span class="vtt-editor__shortcuts"><kbd>I</kbd> mark in · <kbd>O</kbd> mark out · <kbd>Ctrl/Cmd</kbd>+<kbd>Enter</kbd> save cue · <kbd>Alt</kbd>+<kbd>↓</kbd>/<kbd>↑</kbd> next/prev cue · <kbd>Alt</kbd>+<kbd>←</kbd>/<kbd>→</kbd> nudge cue 100ms · <button type="button" class="vtt-editor__shortcut-help-toggle" data-action="toggle-shortcut-help">All shortcuts (<kbd>?</kbd>)</button></span>
       <form>
         <label>Start (seconds)<input name="start" type="number" min="0" step="0.001" required></label>
         <button type="button" data-set-time="start">Use scrub time</button>
@@ -887,7 +905,13 @@
         <ol class="vtt-editor__validation-summary-list"></ol>
       </div>
       <ol class="vtt-editor__list"></ol>
-      <span class="vtt-editor__status" aria-live="polite">Saved to this browser only.</span>`;
+      <span class="vtt-editor__status" aria-live="polite">Saved to this browser only.</span>
+      <div class="vtt-editor__shortcut-help" hidden role="dialog" aria-modal="true" aria-label="Keyboard shortcuts">
+        <div class="vtt-editor__shortcut-help-panel">
+          <header><strong>Keyboard shortcuts</strong><button type="button" data-action="close-shortcut-help" aria-label="Close keyboard shortcuts">&times;</button></header>
+          <dl class="vtt-editor__shortcut-help-list"></dl>
+        </div>
+      </div>`;
 
     const form = vttEditor.querySelector("form");
     const setFormTime = (field) => {
@@ -898,8 +922,37 @@
     vttEditor.querySelectorAll("[data-set-time]").forEach((button) => {
       button.addEventListener("click", () => setFormTime(button.dataset.setTime));
     });
+    const shortcutHelp = vttEditor.querySelector(".vtt-editor__shortcut-help");
+    const shortcutHelpList = vttEditor.querySelector(".vtt-editor__shortcut-help-list");
+    VTT_EDITOR_SHORTCUTS.forEach((entry) => {
+      const dt = document.createElement("dt");
+      dt.innerHTML = entry.keys.map((key) => `<kbd>${key}</kbd>`).join("+");
+      const dd = document.createElement("dd");
+      dd.textContent = entry.description;
+      shortcutHelpList.append(dt, dd);
+    });
+    const setShortcutHelpVisible = (visible) => {
+      shortcutHelp.hidden = !visible;
+    };
+    vttEditor.querySelector('[data-action="toggle-shortcut-help"]').addEventListener("click", () => {
+      setShortcutHelpVisible(shortcutHelp.hidden);
+    });
+    vttEditor.querySelector('[data-action="close-shortcut-help"]').addEventListener("click", () => setShortcutHelpVisible(false));
+    shortcutHelp.addEventListener("click", (event) => {
+      if (event.target === shortcutHelp) setShortcutHelpVisible(false);
+    });
     document.addEventListener("keydown", (event) => {
       if (vttEditor.hidden) return;
+      if (event.key === "Escape" && !shortcutHelp.hidden) {
+        event.preventDefault();
+        setShortcutHelpVisible(false);
+        return;
+      }
+      if (isShortcutHelpToggle(event)) {
+        event.preventDefault();
+        setShortcutHelpVisible(shortcutHelp.hidden);
+        return;
+      }
       const field = vttShortcutField(event);
       if (!field) return;
       event.preventDefault();
