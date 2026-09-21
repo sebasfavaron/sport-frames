@@ -36,6 +36,7 @@
   let editingCueId = null;
   let editingCueOriginal = null;
   let destructiveUndoSnapshot = null;
+  let redoSnapshot = null;
   let selectedCueIds = new Set();
   let nextCueId = 1;
   const VTT_EDITOR_STORAGE_KEY = "sport-frames:vtt-editor-cues";
@@ -607,6 +608,11 @@
   function setDestructiveUndoSnapshot(cues) {
     destructiveUndoSnapshot = snapshotCues(cues);
     if (vttEditor) vttEditor.querySelector('[data-action="undo-destructive"]').disabled = false;
+    redoSnapshot = null;
+    if (vttEditor) {
+      const redoButton = vttEditor.querySelector('[data-action="redo-destructive"]');
+      if (redoButton) redoButton.disabled = true;
+    }
   }
 
   function saveEditorCues() {
@@ -891,6 +897,7 @@
         <button type="button" data-export="download">Download .vtt</button>
         <button type="button" data-export="download-srt">Download .srt</button>
         <button type="button" data-action="undo-destructive" disabled>Undo last cue change</button>
+        <button type="button" data-action="redo-destructive" disabled>Redo</button>
         <button type="button" data-action="clear-all">Clear all cues</button>
         <label class="vtt-editor__bulk-select"><input type="checkbox" data-action="select-all-visible"> Select all visible</label>
         <button type="button" data-action="delete-selected" disabled>Delete selected (0)</button>
@@ -1291,14 +1298,32 @@
     });
     vttEditor.querySelector('[data-action="undo-destructive"]').addEventListener("click", (event) => {
       if (!destructiveUndoSnapshot) return;
+      redoSnapshot = snapshotCues(editorCues);
       editorCues = snapshotCues(destructiveUndoSnapshot);
       destructiveUndoSnapshot = null;
+      event.currentTarget.disabled = true;
+      const redoButton = vttEditor.querySelector('[data-action="redo-destructive"]');
+      if (redoButton) redoButton.disabled = false;
+      resetEditorForm({ rollback: false });
+      renderEditorCues();
+      updateVttAnnotation();
+      saveEditorCues();
+      setEditorStatus("Last cue change undone. Redo is available.");
+    });
+    vttEditor.querySelector('[data-action="redo-destructive"]').addEventListener("click", (event) => {
+      if (!redoSnapshot) return;
+      const cuesToRestore = redoSnapshot;
+      destructiveUndoSnapshot = snapshotCues(editorCues);
+      const undoButton = vttEditor.querySelector('[data-action="undo-destructive"]');
+      if (undoButton) undoButton.disabled = false;
+      editorCues = snapshotCues(cuesToRestore);
+      redoSnapshot = null;
       event.currentTarget.disabled = true;
       resetEditorForm({ rollback: false });
       renderEditorCues();
       updateVttAnnotation();
       saveEditorCues();
-      setEditorStatus("Last cue change undone.");
+      setEditorStatus("Redo applied.");
     });
     vttEditor.querySelector('[data-action="clear-all"]').addEventListener("click", () => {
       if (!editorCues.length) {

@@ -23,5 +23,5 @@ assert.match(script, /data-action="undo-destructive" disabled>Undo last cue chan
 assert.match(script, /setDestructiveUndoSnapshot\(editorCues\);\n        editorCues = editorCues\.filter/, "delete snapshots before mutation");
 assert.match(script, /setDestructiveUndoSnapshot\(editorCues\);\n      editorCues = \[\];/, "clear-all snapshots after confirmation and before mutation");
 assert.match(script, /destructiveUndoSnapshot = null;\n      event\.currentTarget\.disabled = true;/, "undo is one-shot");
-assert.match(script, /renderEditorCues\(\);\n      updateVttAnnotation\(\);\n      saveEditorCues\(\);\n      setEditorStatus\("Last cue change undone\."\);/, "undo refreshes preview, persistence, and generic status");
+assert.match(script, /renderEditorCues\(\);\n      updateVttAnnotation\(\);\n      saveEditorCues\(\);\n      setEditorStatus\("Last cue change undone\. Redo is available\."\);/, "undo refreshes preview, persistence, and generic status");
 console.log("destructive cue undo verification: pass");

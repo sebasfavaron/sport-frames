@@ -16,6 +16,19 @@ Fields:
 
 ## Items
 
+### T-049.50 - Redo for undone WebVTT cue changes
+
+- status: `done`
+- goal: let a reviewer who used the existing one-shot "Undo last cue change" recover the undone state with a symmetric "Redo", instead of that undo being an irreversible trade of one state for another, without adding a backend, account, upload, external library, or framework
+- source: `T-049 standing criterion; worker-selected narrow slice 2026-09-21`
+- workspace: `/home/sebas/work/projects/sport-frames`
+- next_step:
+  - select the next narrow live-annotation improvement
+- notes:
+  - completed: the toolbar gained a **Redo** button next to the existing **Undo last cue change** button, disabled until there's something to redo. A new in-memory `redoSnapshot` (mirroring the existing single-slot `destructiveUndoSnapshot` design, never persisted) is populated only by the undo click handler, which now snapshots the current cue list into `redoSnapshot` immediately before restoring the older `destructiveUndoSnapshot`, then enables Redo. The new Redo click handler is the mirror image: it snapshots the current (post-undo) cue list back into `destructiveUndoSnapshot`, restores `redoSnapshot`, and re-enables Undo — so a redo can itself be undone. Both handlers remain one-shot (their own snapshot is cleared and their own button disabled after use), matching the existing undo pattern. `setDestructiveUndoSnapshot` — the single choke point every destructive/creation action (add, duplicate, single delete, bulk delete, merge, clear-all) already calls immediately before mutating — now also clears `redoSnapshot` and disables the Redo button, so any new change correctly invalidates a stale redo target instead of letting Redo silently resurrect a list that no longer follows from the current state. No new cue field, export change (`buildVtt`/`buildSrt` untouched), persisted key (`saveEditorCues` untouched), multi-level history, keyboard shortcut, backend, account, upload, dependency, or framework
+  - verified 2026-09-21: `node --check script.js`; `bash -n tools/*.sh`; `git diff --check`; all 35 `tools/verify-*.js` harnesses (including the pre-existing `tools/verify-destructive-undo.js`, updated only for the undo handler's new status-message wording) plus the new `tools/verify-t04950.js`, which extracts the shipped `snapshotCues`/`setDestructiveUndoSnapshot` verbatim into a `vm` context with a mocked `vttEditor`/button stubs and proves: arming a new undo snapshot stores a real deep-enough clone (later mutation of the live array does not retroactively corrupt the stored snapshot) and always clears any pending `redoSnapshot`, disabling the Redo button. It then asserts against the shipped source that the Redo control sits next to Undo and starts disabled, that the undo handler snapshots into `redoSnapshot` before restoring and re-enables Redo, that the redo handler snapshots back into `destructiveUndoSnapshot` before restoring `redoSnapshot` and re-enables Undo, that both handlers refresh the list/live preview/persistence and report a status line, and that `redoSnapshot` never appears in `buildVtt`/`buildSrt`/`saveEditorCues`. A real static HTTP server returned `200` for `/?vtt-editor` and `/script.js`; the fetched `/script.js` contained the `redo-destructive` button markup and click-handler wiring
+- tags: [project:sport-frames, type:vtt-editor-cue-change-redo, criterion:live-annotations]
+
 ### T-049.49 - Keyboard shortcuts help overlay for the WebVTT cue editor
 
 - status: `done`
