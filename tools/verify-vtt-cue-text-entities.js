@@ -32,9 +32,9 @@ for (const [literal, escaped] of cases) {
   assert.equal(context.unescapeVttCueText(exportedPayload), literal, "re-import restores exact literal text");
 }
 
-assert.match(script, /\$\{escapeVttCueText\(cue\.text\)\}/, "buildVtt uses escaping on cue payload only");
+assert.match(script, /\$\{formatVttCueText\(cue\.text\)\}/, "buildVtt uses formatting-aware escaping on cue payload only");
 assert.match(script, /text: unescapeVttCueText\(body\.trim\(\)\)/, "parseVttCues decodes imported payload");
 assert.match(script, /summary\.textContent = .*\$\{cue\.text\}/, "editor summary keeps raw text through textContent");
-assert.match(script, /element\.textContent = cue\.text/, "live preview keeps raw text through textContent");
+assert.match(script, /element\.innerHTML = formatVttCueText\(cue\.text\)/, "live preview uses the same allowlisted formatting and entity escaping");
 
 console.log("WebVTT cue text entity verification: pass");

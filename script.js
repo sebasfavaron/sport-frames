@@ -157,6 +157,17 @@
     return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   }
 
+  function formatVttCueText(text) {
+    return String(text).split(/(<\/?(?:b|i|u)>)/gi)
+      .map((part) => /^<\/?(?:b|i|u)>$/i.test(part) ? part.toLowerCase() : escapeVttCueText(part))
+      .join("");
+  }
+
+  function wrapCueTextSelection(text, selectionStart, selectionEnd, tag) {
+    if (!["b", "i", "u"].includes(tag) || selectionEnd <= selectionStart) return null;
+    return `${text.slice(0, selectionStart)}<${tag}>${text.slice(selectionStart, selectionEnd)}</${tag}>${text.slice(selectionEnd)}`;
+  }
+
   function unescapeVttCueText(text) {
     return text.replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&");
   }
@@ -166,7 +177,7 @@
       .sort((a, b) => a.start - b.start || a.end - b.end || a.id - b.id)
       .map((cue) => {
         const name = cueVoice(cue);
-        const payload = `${name ? `<v ${escapeVttCueText(name)}>` : ""}${escapeVttCueText(cue.text)}`;
+        const payload = `${name ? `<v ${escapeVttCueText(name)}>` : ""}${formatVttCueText(cue.text)}`;
         const identifier = cueName(cue);
         return `${identifier ? `${identifier}\n` : ""}${vttTimestamp(cue.start)} --> ${vttTimestamp(cue.end)} ${cueSettings(cue)}\n${payload}`;
       })
@@ -866,6 +877,7 @@
         <label>End (seconds)<input name="end" type="number" min="0" step="0.001" required></label>
         <button type="button" data-set-time="end">Use scrub time</button>
         <label class="vtt-editor__text">Cue text<textarea name="text" rows="2" required></textarea></label>
+        <span class="vtt-editor__text-format" aria-label="Format selected cue text">Format selection: <button type="button" data-format-cue-text="b"><strong>B</strong></button><button type="button" data-format-cue-text="i"><em>I</em></button><button type="button" data-format-cue-text="u"><u>U</u></button></span>
         <label class="vtt-editor__voice">Speaker (optional)<input name="voice" type="text" autocomplete="off"></label>
         <label class="vtt-editor__cue-id">Cue identifier (optional)<input name="cueName" type="text" autocomplete="off"></label>
         <label class="vtt-editor__align">Text alignment<select name="align"><option value="start">Start</option><option value="center" selected>Center</option><option value="end">End</option></select></label>
@@ -1012,6 +1024,23 @@
       }
       startEditingCue(adjacent.cue);
       setEditorStatus(`Editing cue ${adjacent.position} of ${adjacent.total} at ${vttTimestamp(adjacent.cue.start)}.`);
+    });
+    vttEditor.querySelectorAll("[data-format-cue-text]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const textarea = form.elements.text;
+        const wrapped = wrapCueTextSelection(textarea.value, textarea.selectionStart, textarea.selectionEnd, button.dataset.formatCueText);
+        if (wrapped === null) {
+          setEditorStatus("Select cue text before applying a style.");
+          textarea.focus();
+          return;
+        }
+        const selectedLength = textarea.selectionEnd - textarea.selectionStart;
+        const selectionStart = textarea.selectionStart + 3;
+        textarea.value = wrapped;
+        textarea.focus();
+        textarea.setSelectionRange(selectionStart, selectionStart + selectedLength);
+        setEditorStatus("Selected cue text formatted. Save to keep the change.");
+      });
     });
     vttEditor.querySelectorAll("[data-nudge-x], [data-nudge-y]").forEach((button) => {
       button.addEventListener("click", () => {
@@ -1462,7 +1491,7 @@
     vttAnnotation.replaceChildren(...previews.map((cue) => {
       const element = document.createElement("span");
       element.className = "scrolly__vtt-cue";
-      element.textContent = cue.text;
+      element.innerHTML = formatVttCueText(cue.text);
       element.style.left = `${cue.x}%`;
       element.style.top = `${cue.y}%`;
       element.style.width = `${cue.size}%`;

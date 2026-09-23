@@ -16,6 +16,19 @@ Fields:
 
 ## Items
 
+### T-049.51 - Basic WebVTT cue text formatting
+
+- status: `done`
+- goal: let reviewers apply standard bold, italic, or underline WebVTT markup to selected cue text without typing tags by hand, while keeping unsupported markup inert
+- source: `T-049 standing criterion; worker-selected narrow slice 2026-09-23`
+- workspace: `/home/sebas/work/projects/sport-frames`
+- next_step:
+  - select the next narrow live-annotation improvement
+- notes:
+  - completed: the cue form gained three native **B**, **I**, and **U** controls that wrap only the current textarea selection in standard WebVTT `<b>`, `<i>`, or `<u>` tags, preserve the selection after wrapping, and reject an empty selection with a visible status. `formatVttCueText` is the shared allowlist for export and the authored-cue live overlay: those three exact tags survive as markup while all other tags and reserved characters remain entity-escaped, so the new `innerHTML` preview path cannot activate arbitrary reviewer text. Import and existing localStorage preserve the tag source through the existing cue `text` field; no new cue field, persistence key, backend, account, upload, dependency, framework, CSS class styling, or region support. SRT export remains unchanged because SRT has no standard equivalent
+  - verified 2026-09-23: `node --check script.js`; `node --check tools/verify-t04951.js`; `bash -n tools/*.sh`; `git diff --check`; all 36 `tools/verify-*.js` harnesses including new `tools/verify-t04951.js` (and the pre-existing entity harness updated only to expect the new formatting-aware escape path). The new harness extracts the shipped `formatVttCueText` and `wrapCueTextSelection` helpers verbatim into a `vm` context and proves plain entity escaping, preservation and case normalization of `<b>`/`<i>`/`<u>`, inert unsupported `<script>`/`<c>` markup, exact selection wrapping at the start/middle/full body, and rejection of empty selections and unsupported tags. It also imports a real formatted WebVTT payload through the shipped parser and proves tags plus literal ampersands survive, then asserts the three controls, textarea-selection wiring, sanitized export/live preview, existing persistence, and unchanged SRT path
+- tags: [project:sport-frames, type:vtt-editor-cue-text-formatting, criterion:live-annotations]
+
 ### T-049.50 - Redo for undone WebVTT cue changes
 
 - status: `done`
