@@ -16,6 +16,19 @@ Fields:
 
 ## Items
 
+### T-049.52 - Fixed screen regions for WebVTT cues
+
+- status: `done`
+- goal: let reviewers assign a cue to one of four reusable fixed screen regions and preserve that placement through live preview, WebVTT export/import, browser persistence, duplicate, and merge
+- source: `T-049 standing criterion; worker-selected narrow slice 2026-09-24`
+- workspace: `/home/sebas/work/projects/sport-frames`
+- next_step:
+  - select the next narrow live-annotation improvement
+- notes:
+  - completed: the cue form gained a **Fixed screen region** selector with top-left, top-right, bottom-left, and bottom-right presets, plus **None** to retain the existing per-cue X/Y/width controls. Region cues render at their preset location in the authored-cue live overlay and show the region name in the cue list. WebVTT export emits one deduplicated standard `REGION` block for each used preset and gives each assigned cue a standard `region:<id>` setting instead of conflicting `line`/`position`/`size` settings; cues without a region export byte-identically to the previous format. Import accepts those four known region ids from cue settings, and the existing localStorage path now preserves the optional region. Edit, duplicate, split, retiming, undo/redo, and merge retain it (merge uses the first cue's region). SRT remains unchanged because it has no region equivalent. No custom region builder, region scrolling, new persistence key, backend, account, upload, dependency, or framework
+  - verified 2026-09-24: `node --check script.js`; `node --check` for every `tools/verify-*.js`; `bash -n tools/*.sh`; `git diff --check`; all 37 `tools/verify-*.js` harnesses including new `tools/verify-t04952.js`. The new harness extracts the shipped region presets and helpers into a `vm` context and proves preset validation, region-over-spatial precedence, unchanged settings for ordinary cues, fixed live-preview coordinates, deduplicated standard REGION definitions, and unsupported-id rejection. It also asserts export/import, form/edit/live-preview/localStorage, duplicate/merge, and unchanged SRT wiring. Four older harness assertions were extended only to account for the new optional `region` field and the renamed region-aware preview helper
+- tags: [project:sport-frames, type:vtt-editor-fixed-screen-regions, criterion:live-annotations]
+
 ### T-049.51 - Basic WebVTT cue text formatting
 
 - status: `done`

@@ -111,8 +111,8 @@ assert.doesNotMatch(stored, /voice/, "no-speaker cue is stored without a voice k
 // UI / handler wiring assertions against the shipped source.
 assert.match(source, /<label class="vtt-editor__voice">Speaker \(optional\)<input name="voice" type="text"/, "form exposes a speaker input");
 assert.match(source, /const voice = form\.elements\.voice\.value\.trim\(\);/, "submit reads the speaker field");
-assert.match(source, /editorCues\.push\(\{ id: nextCueId\+\+, start, end, text, x, y, size, voice, align, name \}\);/, "new cue stores the speaker");
-assert.match(source, /Object\.assign\(cue, \{ start, end, text, x, y, size, voice, align, name \}\);/, "cue update stores the speaker");
+assert.match(source, /editorCues\.push\(\{ id: nextCueId\+\+, start, end, text, x, y, size, voice, align, name, region \}\);/, "new cue stores the speaker");
+assert.match(source, /Object\.assign\(cue, \{ start, end, text, x, y, size, voice, align, name, region \}\);/, "cue update stores the speaker");
 assert.match(source, /form\.elements\.voice\.value = cueVoice\(cue\);/, "editing a cue loads its speaker into the form");
 assert.match(source, /\$\{cueVoice\(cue\) \? `\$\{cueVoice\(cue\)\}: ` : ""\}\$\{cue\.text\}/, "list summary shows the speaker");
 

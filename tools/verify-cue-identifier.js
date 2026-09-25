@@ -140,8 +140,8 @@ assert.ok(!("name" in mergedPlain[0]), "merging two unnamed cues produces no nam
 // UI / handler wiring assertions against the shipped source.
 assert.match(source, /<label class="vtt-editor__cue-id">Cue identifier \(optional\)<input name="cueName" type="text"/, "form exposes a cue identifier input");
 assert.match(source, /const name = form\.elements\.cueName\.value\.replace\(\/--\>\/g, ""\)\.replace\(\/\[\\r\\n\]\+\/g, " "\)\.trim\(\);/, "submit reads and sanitizes the identifier field");
-assert.match(source, /editorCues\.push\(\{ id: nextCueId\+\+, start, end, text, x, y, size, voice, align, name \}\);/, "new cue stores the identifier");
-assert.match(source, /Object\.assign\(cue, \{ start, end, text, x, y, size, voice, align, name \}\);/, "cue update stores the identifier");
+assert.match(source, /editorCues\.push\(\{ id: nextCueId\+\+, start, end, text, x, y, size, voice, align, name, region \}\);/, "new cue stores the identifier");
+assert.match(source, /Object\.assign\(cue, \{ start, end, text, x, y, size, voice, align, name, region \}\);/, "cue update stores the identifier");
 assert.match(source, /form\.elements\.cueName\.value = cueName\(cue\);/, "editing a cue loads its identifier into the form");
 assert.match(source, /const idNote = cueName\(cue\) \? `#\$\{cueName\(cue\)\} ` : "";/, "list summary shows the identifier");
 assert.match(source, /if \(cueName\(cue\)\) clone\.name = cueName\(cue\);/, "duplicate carries the identifier");

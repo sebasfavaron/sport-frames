@@ -46,6 +46,12 @@
   const CUE_GAP_THRESHOLD_SECONDS = 1;
   const REFERENCE_MARKER_SNAP_TOLERANCE_SECONDS = 0.25;
   const CUE_TEXT_ALIGN_VALUES = ["start", "center", "end"];
+  const VTT_CUE_REGIONS = {
+    "top-left": { label: "Top left", x: 5, y: 5, size: 40, regionAnchor: "0%,0%", viewportAnchor: "5%,5%" },
+    "top-right": { label: "Top right", x: 55, y: 5, size: 40, regionAnchor: "0%,0%", viewportAnchor: "55%,5%" },
+    "bottom-left": { label: "Bottom left", x: 5, y: 75, size: 40, regionAnchor: "0%,0%", viewportAnchor: "5%,75%" },
+    "bottom-right": { label: "Bottom right", x: 55, y: 75, size: 40, regionAnchor: "0%,0%", viewportAnchor: "55%,75%" }
+  };
   const VTT_EDITOR_SHORTCUTS = [
     { keys: ["I"], description: "Mark in — set cue start to the live scrub time" },
     { keys: ["O"], description: "Mark out — set cue end to the live scrub time" },
@@ -142,11 +148,22 @@
   });
 
   const cueAlign = (cue) => (CUE_TEXT_ALIGN_VALUES.includes(cue.align) ? cue.align : "center");
+  const cueRegion = (cue) => (typeof cue.region === "string" && VTT_CUE_REGIONS[cue.region] ? cue.region : "");
+  const cuePreviewSpatial = (cue) => cueRegion(cue) ? VTT_CUE_REGIONS[cueRegion(cue)] : cueSpatial(cue);
 
   const cueSettings = (cue) => {
+    const region = cueRegion(cue);
+    if (region) return `region:${region} align:${cueAlign(cue)}`;
     const { x, y, size } = cueSpatial(cue);
     return `line:${y}%,center position:${x}%,center size:${size}% align:${cueAlign(cue)}`;
   };
+
+  const regionDefinitions = (cues) => [...new Set(cues.map(cueRegion).filter(Boolean))]
+    .map((id) => {
+      const region = VTT_CUE_REGIONS[id];
+      return `REGION\nid:${id}\nwidth:${region.size}%\nlines:3\nregionanchor:${region.regionAnchor}\nviewportanchor:${region.viewportAnchor}`;
+    })
+    .join("\n\n");
 
   const cueVoice = (cue) => (typeof cue.voice === "string" ? cue.voice.trim() : "");
 
@@ -182,7 +199,8 @@
         return `${identifier ? `${identifier}\n` : ""}${vttTimestamp(cue.start)} --> ${vttTimestamp(cue.end)} ${cueSettings(cue)}\n${payload}`;
       })
       .join("\n\n");
-    return `WEBVTT\n\n${body}${body ? "\n" : ""}`;
+    const regions = regionDefinitions(editorCues);
+    return `WEBVTT\n\n${regions}${regions && body ? "\n\n" : ""}${body}${body ? "\n" : ""}`;
   }
 
   async function copyVttFile(clipboard, vttText) {
@@ -272,6 +290,8 @@
       const size = /(?:^|\s)size:([\d.]+)%(?:\s|$)/.exec(settings);
       const alignMatch = /(?:^|\s)align:(start|center|end|left|right)(?:\s|$)/.exec(settings);
       const align = alignMatch ? ({ left: "start", right: "end" }[alignMatch[1]] || alignMatch[1]) : "center";
+      const regionMatch = /(?:^|\s)region:([^\s]+)(?:\s|$)/.exec(settings);
+      const region = regionMatch && VTT_CUE_REGIONS[regionMatch[1]] ? regionMatch[1] : "";
       i++;
       const textLines = [];
       while (i < lines.length && lines[i].trim() !== "") {
@@ -292,7 +312,8 @@
           size: size ? clamp(Number(size[1]), 1, 100) : 60,
           ...(pendingId ? { name: pendingId } : {}),
           ...(voice ? { voice } : {}),
-          ...(align !== "center" ? { align } : {})
+          ...(align !== "center" ? { align } : {}),
+          ...(region ? { region } : {})
         });
       }
       pendingId = "";
@@ -379,6 +400,7 @@
     if (typeof cue.voice === "string" && cue.voice.trim()) clone.voice = cue.voice.trim();
     if (CUE_TEXT_ALIGN_VALUES.includes(cue.align) && cue.align !== "center") clone.align = cue.align;
     if (cueName(cue)) clone.name = cueName(cue);
+    if (typeof cue.region === "string" && cue.region) clone.region = cue.region;
     return clone;
   }
 
@@ -426,6 +448,7 @@
     if (typeof cue.voice === "string" && cue.voice.trim()) merged.voice = cue.voice.trim();
     if (CUE_TEXT_ALIGN_VALUES.includes(cue.align) && cue.align !== "center") merged.align = cue.align;
     if (cueName(cue)) merged.name = cueName(cue);
+    if (typeof cue.region === "string" && cue.region) merged.region = cue.region;
     return cues.filter((item) => item.id !== cue.id && item.id !== next.id).concat(merged);
   }
 
@@ -635,7 +658,8 @@
           const voice = cueVoice(cue);
           const align = cueAlign(cue);
           const name = cueName(cue);
-          return { start, end, text, ...cueSpatial({ x, y, size }), ...(name ? { name } : {}), ...(voice ? { voice } : {}), ...(align !== "center" ? { align } : {}) };
+          const region = cueRegion(cue);
+          return { start, end, text, ...cueSpatial({ x, y, size }), ...(name ? { name } : {}), ...(voice ? { voice } : {}), ...(align !== "center" ? { align } : {}), ...(region ? { region } : {}) };
         }))
       );
     } catch {
@@ -668,6 +692,7 @@
     form.elements.voice.value = cueVoice(cue);
     form.elements.cueName.value = cueName(cue);
     form.elements.align.value = cueAlign(cue);
+    form.elements.region.value = cueRegion(cue);
     const spatial = cueSpatial(cue);
     form.elements.x.value = spatial.x;
     form.elements.y.value = spatial.y;
@@ -706,10 +731,11 @@
         selectCheckbox.checked = selectedCueIds.has(cue.id);
         const summary = document.createElement("span");
         summary.className = "vtt-editor__cue-summary";
-        const spatial = cueSpatial(cue);
+        const spatial = cuePreviewSpatial(cue);
+        const regionNote = cueRegion(cue) ? ` region ${VTT_CUE_REGIONS[cueRegion(cue)].label}` : "";
         const alignNote = cueAlign(cue) === "center" ? "" : ` align ${cueAlign(cue)}`;
         const idNote = cueName(cue) ? `#${cueName(cue)} ` : "";
-        summary.textContent = `${idNote}${vttTimestamp(cue.start)} → ${vttTimestamp(cue.end)} · x ${spatial.x}% y ${spatial.y}%${alignNote} · ${cueVoice(cue) ? `${cueVoice(cue)}: ` : ""}${cue.text}`;
+        summary.textContent = `${idNote}${vttTimestamp(cue.start)} → ${vttTimestamp(cue.end)} · x ${spatial.x}% y ${spatial.y}%${regionNote}${alignNote} · ${cueVoice(cue) ? `${cueVoice(cue)}: ` : ""}${cue.text}`;
         if (overlaps.cueIds.has(cue.id)) {
           item.classList.add("is-overlapping");
           const warning = document.createElement("strong");
@@ -881,6 +907,7 @@
         <label class="vtt-editor__voice">Speaker (optional)<input name="voice" type="text" autocomplete="off"></label>
         <label class="vtt-editor__cue-id">Cue identifier (optional)<input name="cueName" type="text" autocomplete="off"></label>
         <label class="vtt-editor__align">Text alignment<select name="align"><option value="start">Start</option><option value="center" selected>Center</option><option value="end">End</option></select></label>
+        <label class="vtt-editor__region">Fixed screen region<select name="region"><option value="">None (use position below)</option><option value="top-left">Top left</option><option value="top-right">Top right</option><option value="bottom-left">Bottom left</option><option value="bottom-right">Bottom right</option></select></label>
         <fieldset class="vtt-editor__position"><legend>Position on video (%)</legend>
           <label>X<input name="x" type="number" min="0" max="100" step="1" value="50" required></label>
           <label>Y<input name="y" type="number" min="0" max="100" step="1" value="8" required></label>
@@ -1056,7 +1083,8 @@
       Object.assign(cue, {
         x: clamp(Number(form.elements.x.value), 0, 100),
         y: clamp(Number(form.elements.y.value), 0, 100),
-        size: clamp(Number(form.elements.size.value), 1, 100)
+        size: clamp(Number(form.elements.size.value), 1, 100),
+        region: VTT_CUE_REGIONS[form.elements.region.value] ? form.elements.region.value : ""
       });
       updateVttAnnotation();
     });
@@ -1068,6 +1096,7 @@
       const voice = form.elements.voice.value.trim();
       const name = form.elements.cueName.value.replace(/-->/g, "").replace(/[\r\n]+/g, " ").trim();
       const align = CUE_TEXT_ALIGN_VALUES.includes(form.elements.align.value) ? form.elements.align.value : "center";
+      const region = VTT_CUE_REGIONS[form.elements.region.value] ? form.elements.region.value : "";
       const x = Number(form.elements.x.value);
       const y = Number(form.elements.y.value);
       const size = Number(form.elements.size.value);
@@ -1079,11 +1108,11 @@
       }
       if (editingCueId === null) {
         setDestructiveUndoSnapshot(editorCues);
-        editorCues.push({ id: nextCueId++, start, end, text, x, y, size, voice, align, name });
+        editorCues.push({ id: nextCueId++, start, end, text, x, y, size, voice, align, name, region });
         setEditorStatus("Cue added. Undo is available.");
       } else {
         const cue = editorCues.find((item) => item.id === editingCueId);
-        Object.assign(cue, { start, end, text, x, y, size, voice, align, name });
+        Object.assign(cue, { start, end, text, x, y, size, voice, align, name, region });
         setEditorStatus("Cue updated.");
       }
       resetEditorForm({ rollback: false });
@@ -1487,7 +1516,7 @@
     })) : [];
     editorCues
       .filter((cue) => video.currentTime >= cue.start && video.currentTime < cue.end)
-      .forEach((cue) => previews.push({ text: cue.text, ...cueSpatial(cue), align: cueAlign(cue) }));
+      .forEach((cue) => previews.push({ text: cue.text, ...cuePreviewSpatial(cue), align: cueAlign(cue) }));
     vttAnnotation.replaceChildren(...previews.map((cue) => {
       const element = document.createElement("span");
       element.className = "scrolly__vtt-cue";

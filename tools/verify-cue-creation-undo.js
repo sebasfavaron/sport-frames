@@ -6,7 +6,7 @@ const script = fs.readFileSync(new URL("../script.js", `file://${__filename}`), 
 
 assert.match(
   script,
-  /if \(editingCueId === null\) \{\s*setDestructiveUndoSnapshot\(editorCues\);\s*editorCues\.push\(\{ id: nextCueId\+\+, start, end, text, x, y, size, voice, align, name \}\);/,
+  /if \(editingCueId === null\) \{\s*setDestructiveUndoSnapshot\(editorCues\);\s*editorCues\.push\(\{ id: nextCueId\+\+, start, end, text, x, y, size, voice, align, name, region \}\);/,
   "valid cue add snapshots immediately before mutation"
 );
 assert.match(
