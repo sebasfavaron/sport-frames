@@ -282,6 +282,40 @@ passively, never edited/retimed/deleted/re-exported.
 | External WebVTT parser library | More complete (styling/regions), but this project's cue subset doesn't need it | Reject |
 | Auto-import default/loaded track into the editor on open | Removes a click, but silently mixes playback and authoring state without an explicit action | Reject |
 
+## T-049.54: merge all FFmpeg suggesters into one deduplicated WebVTT
+
+### Decision
+
+Add one wrapper that orchestrates the five existing suggesters (T-049.1/.6/.7/.8/.53) instead of
+building a new detection signal.
+
+```bash
+tools/suggest-all-vtt.sh my-play.mp4 > all-suggestions.vtt
+```
+
+- Runs `suggest-scenecut-vtt.sh`, `suggest-black-vtt.sh`, `suggest-freeze-vtt.sh`,
+  `suggest-silence-vtt.sh`, and `suggest-loudpeak-vtt.sh` with their own default thresholds, then
+  merges every cue into one time-sorted WebVTT.
+- Two cues whose start and end each land within 0.1s (the same tolerance T-049.20's near-duplicate
+  editor warning already uses) are collapsed into one, keeping the higher-priority suggester's
+  identifier/body and appending `[also flagged by: NAME]` for the dropped one, so the source
+  signal stays visible without duplicate near-identical review items — for example, a hard cut to
+  a black frame is both a `scenecut` and a `black` candidate at almost the same instant.
+- A suggester whose required stream is missing (silence/loud-peak on a video with no audio track)
+  is skipped with a stderr warning; any other failure aborts the whole run with that suggester's
+  exit status.
+- No new detection signal, threshold, model, browser CV, dependency, backend, account, or upload:
+  it only orchestrates tools that already exist and merges their already-TODO-tagged output.
+
+### Options considered
+
+| Approach | Fit | Decision |
+| --- | --- | --- |
+| Wrapper that runs the five existing suggesters and merges/dedupes their WebVTT output | Closes the practical "run five tools, merge `.vtt` files by hand" gap with zero new detection logic | Selected |
+| Shared confidence/threshold preset file for the suggesters | Real ergonomics gap, but each suggester's threshold is already a single documented CLI argument with a sensible default; a preset file adds a new file format/parsing step for a problem that's mostly already solved | Defer |
+| A genuinely new signal (for example FFmpeg `crop`/motion-vector-based camera-pan detection) | Would add coverage, but the immediate gap named in this slice's dispatch was integration across existing signals, not another one | Defer |
+| One-click "run all suggesters" button inside the in-page editor | Needs the editor (a browser page) to shell out to FFmpeg, which breaks the project's static-page-with-no-backend model; the CLI wrapper still loads into the editor via the existing Import .vtt (T-049.10) | Reject |
+
 ## T-049.53: FFmpeg scene-cut-to-WebVTT cue suggestions
 
 ### Decision

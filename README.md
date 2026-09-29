@@ -101,6 +101,23 @@ mínimo entre cortes. Cada cue dice `TODO: review scene cut (score …)`: un cor
 candidata de cambio visual, no una jugada. Revisalo, editá/eliminá los cues en el editor de la
 página (o cualquier herramienta VTT) antes de usarlo. No sube video ni agrega UI, estado o backend.
 
+## Sugerir cues WebVTT combinando todos los detectores
+
+En vez de correr cada detector por separado y unir los `.vtt` a mano, este helper corre los
+cinco (`scenecut`, `black`, `freeze`, `quiet` vía `silencedetect`, `loudpeak` vía `astats`) con
+sus umbrales por defecto y devuelve un único WebVTT ordenado por tiempo:
+
+```bash
+tools/suggest-all-vtt.sh mi-jugada.mp4 > sugerencias.vtt
+```
+
+Si dos detectores sugieren cues con inicio y fin casi idénticos (±0.1s), se quedan con uno solo y
+agregan `[also flagged by: NOMBRE]` al cuerpo del cue que sobrevive, para no revisar el mismo
+instante dos veces. Un detector cuyo stream (video o audio) falte en el archivo se saltea con un
+aviso por stderr; cualquier otro error del detector aborta el wrapper. Sigue sin haber modelo,
+CV de browser, dependencia nueva, backend, cuenta o subida: es sólo orquestación de los cinco
+scripts existentes.
+
 ## Preview de anotación en vivo
 
 Abrí la página con `?annotation-preview` (por ejemplo

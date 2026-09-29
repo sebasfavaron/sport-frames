@@ -16,6 +16,20 @@ Fields:
 
 ## Items
 
+### T-049.54 - Merge all FFmpeg suggesters into one deduplicated WebVTT
+
+- status: `done`
+- goal: give reviewers a single command that runs every existing FFmpeg-based cue suggester (scenecut, black, freeze, silence, loud-peak) against one clip and merges their output into one time-sorted WebVTT, collapsing near-identical cross-signal detections instead of leaving reviewers to run five tools and merge `.vtt` files by hand
+- source: `T-049 standing criterion; worker-selected narrow slice 2026-09-29 — closes the "run all suggesters and merge" gap named in the current dispatch after T-049.53 added the last missing per-signal WebVTT emitter`
+- workspace: `/home/sebas/work/projects/sport-frames`
+- next_step:
+  - select the next narrow live-annotation improvement
+- notes:
+  - completed: `tools/suggest-all-vtt.sh VIDEO` runs `suggest-scenecut-vtt.sh`, `suggest-black-vtt.sh`, `suggest-freeze-vtt.sh`, `suggest-silence-vtt.sh`, and `suggest-loudpeak-vtt.sh` against `VIDEO` with each suggester's own default thresholds (no new arguments to tune), flattens their cue blocks, sorts by start time, and de-duplicates any two cues whose start and end each land within 0.1s (an inclusive tolerance, matching the existing near-duplicate-warning convention) — the earlier suggester in a fixed priority order (scenecut, black, freeze, quiet, loudpeak) keeps its identifier/body, and the dropped suggester's name is appended to the surviving cue's body as `[also flagged by: NAME]`, so the source signal(s) stay visible per cue. A suggester whose required stream (video/audio) is absent is skipped with a stderr warning instead of failing the whole run; any other suggester failure aborts with that suggester's exit status. No model, browser CV, new dependency, backend, account, or upload — it only orchestrates the five suggesters that already exist and merges their already-TODO-tagged output
+  - verified 2026-09-29: `node --check script.js`; `node --check` for every `tools/*.js`; `bash -n tools/*.sh`; `git diff --check`; all 41 pre-existing `tools/verify-*.js` harnesses plus new `tools/verify-t04954.js`, a real functional test (synthetic FFmpeg clips, not a vm-extraction check, since this slice is a shell wrapper around other shell tools): a 3-second red/black/blue clip (no audio) merges to exactly 3 cues sorted by start — `freeze-1` over the red segment, `scenecut-1` at the first cut, and `black-1` over the black segment carrying `[also flagged by: freeze]` because its near-identical `freeze-2` (also 1.0-2.0s) was deduplicated into it — while stderr reports skipping the silence/loud-peak suggesters for the missing audio stream; the same clip with silence+tone+silence audio added merges `freeze-1` with `[also flagged by: quiet]` (cross-signal video+audio dedup) and keeps the trailing `quiet-2` on its own; a flat unchanging clip merges to a header-only, zero-cue WebVTT; usage/argument-count/missing-file paths exit `2`/`2`/`1` respectively
+  - options considered, recorded in `docs/live-annotations.md` under T-049.54
+- tags: [project:sport-frames, type:merge-ffmpeg-suggesters-webvtt, criterion:live-annotations]
+
 ### T-049.53 - FFmpeg scene-cut-to-WebVTT cue suggestions
 
 - status: `done`
