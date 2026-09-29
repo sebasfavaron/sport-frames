@@ -9,19 +9,20 @@ usage() {
 Usage: suggest-all-vtt.sh VIDEO
 
 Runs suggest-scenecut-vtt.sh, suggest-black-vtt.sh, suggest-freeze-vtt.sh,
-suggest-silence-vtt.sh, and suggest-loudpeak-vtt.sh against VIDEO with each
-suggester's default thresholds, then merges every suggested cue into one
-WebVTT on stdout: sorted by start time, and de-duplicated whenever two
-suggesters propose cues whose start and end each land within 0.1s of a cue
-already kept (the earlier suggester in the list above wins the kept
-identifier/body; the dropped suggester's name is appended to the surviving
-cue's body as "also flagged by: NAME").
+suggest-silence-vtt.sh, suggest-loudpeak-vtt.sh, and suggest-ocr-vtt.sh
+against VIDEO with each suggester's default thresholds, then merges every
+suggested cue into one WebVTT on stdout: sorted by start time, and
+de-duplicated whenever two suggesters propose cues whose start and end each
+land within 0.1s of a cue already kept (the earlier suggester in the list
+above wins the kept identifier/body; the dropped suggester's name is
+appended to the surviving cue's body as "also flagged by: NAME").
 
-A suggester whose required stream (video or audio) is missing from VIDEO is
-skipped with a warning on stderr; any other suggester failure aborts this
-script with that suggester's exit status. This wrapper adds no new signal,
-threshold, model, or dependency: it only runs the existing per-signal
-suggesters and merges their already-reviewed-as-TODO output.
+A suggester whose required stream (video or audio) is missing from VIDEO, or
+whose required external tool (Tesseract, for suggest-ocr-vtt.sh) is not
+installed, is skipped with a warning on stderr; any other suggester failure
+aborts this script with that suggester's exit status. This wrapper adds no
+new signal, threshold, model, or dependency: it only runs the existing
+per-signal suggesters and merges their already-reviewed-as-TODO output.
 EOF
   exit 2
 }
@@ -43,6 +44,7 @@ suggesters=(
   "freeze:suggest-freeze-vtt.sh"
   "quiet:suggest-silence-vtt.sh"
   "loudpeak:suggest-loudpeak-vtt.sh"
+  "ocr:suggest-ocr-vtt.sh"
 )
 
 raw=$(mktemp)
@@ -51,6 +53,10 @@ trap 'rm -f "$raw"' EXIT
 for entry in "${suggesters[@]}"; do
   source_tag=${entry%%:*}
   script_name=${entry#*:}
+  if [[ "$script_name" == "suggest-ocr-vtt.sh" ]] && ! command -v tesseract >/dev/null; then
+    echo "warning: skipping $source_tag ($script_name requires tesseract, which is not installed)" >&2
+    continue
+  fi
   set +e
   output=$("$script_dir/$script_name" "$video" 2>/dev/null)
   status=$?

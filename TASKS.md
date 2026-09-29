@@ -16,6 +16,25 @@ Fields:
 
 ## Items
 
+### T-049.55 - Tesseract OCR-to-WebVTT cue suggestions
+
+- status: `done`
+- goal: give reviewers a suggester that produces actual cue *text* (on-screen scoreboard/caption
+  content, read via OCR) instead of another timing-only signal with a generic `TODO:` body, since
+  every suggester through T-049.54 only ever suggests *when*, never *what*
+- source: `T-049 standing criterion; worker-selected narrow slice 2026-09-29 — dispatch asked for one generation-side slice producing cue TEXT from an existing tool, preferring speech-to-text if feasible within ~20 minutes of setup effort on this machine, else OCR`
+- workspace: `/home/sebas/work/projects/sport-frames`
+- next_step:
+  - select the next narrow live-annotation improvement
+  - retry a `whisper.cpp` speech-to-text suggester once `free -h` on `ballbox-first` shows real memory headroom (see `docs/live-annotations.md` T-049.55 "Speech-to-text: why not this slice")
+- notes:
+  - completed: `tools/suggest-ocr-vtt.sh VIDEO [SCENE_THRESHOLD] [MIN_GAP_SECONDS] [LANG]` reuses the exact FFmpeg scene-cut candidate detector from `suggest-scenecut-vtt.sh`/T-049.53, extracts the frame at each candidate, and runs Tesseract OCR (`--psm 6`, already installed system-wide as `tesseract-ocr` 5.5.0 with `eng`/`spa` data — zero install effort) on it. A frame with no recognized text emits no cue; a frame with text emits a cue whose body IS the OCR'd text, prefixed `OCR:` to mark it as machine-read rather than authored. `tools/suggest-all-vtt.sh` now runs it as a sixth suggester (tag `ocr`, lowest dedup priority) and skips it with a stderr warning instead of aborting when Tesseract is not installed, matching the existing missing-stream skip behavior for the other five suggesters
+  - speech-to-text (`whisper.cpp`/`faster-whisper`/`vosk`) was checked first per the dispatch's preference order but ruled out for this slice: none were installed, and the machine measured 167 MiB of 7.9 GiB RAM free with swap essentially full (2.0/2.0 GiB) at check time — installing/building/loading a speech model risked OOM pressure on this shared, protected box (`~/NORTH-STAR.md`). Full reasoning and a concrete recommendation (retry `whisper.cpp` tiny/base once the box has headroom) in `docs/live-annotations.md`
+  - no model weights, browser CV, new runtime dependency, backend, account, or upload; Tesseract and FFmpeg frame extraction are both pre-existing local CLIs
+  - verified 2026-09-29: `node --check` for every `tools/*.js` and `script.js`; `bash -n` for every `tools/*.sh`; `git diff --check`; all 42 pre-existing `tools/verify-*.js` harnesses plus new `tools/verify-t04955.js`, a real functional test (synthetic FFmpeg + `drawtext` clip, not a mocked OCR call): a plain segment cutting into a segment rendering `HOME 2 AWAY 1` yields exactly one `ocr-1` cue near the cut whose body is `OCR: HOME 2 AWAY 1`; a flat, text-free clip yields only the WEBVTT header; usage/argument-count/missing-file/bad-threshold/bad-min-gap paths exit `2`/`2`/`1`/`2`/`2`; manually confirmed `suggest-all-vtt.sh` merges the OCR cue (`[also flagged by: ocr]`) into the coincident scenecut cue on the same fixture, and that pre-existing `tools/verify-t04954.js` (whose fixtures carry no on-screen text) still passes unchanged with the new suggester wired in
+  - options considered, recorded in `docs/live-annotations.md` under T-049.55
+- tags: [project:sport-frames, type:ocr-webvtt-suggestions, criterion:live-annotations]
+
 ### T-049.54 - Merge all FFmpeg suggesters into one deduplicated WebVTT
 
 - status: `done`

@@ -282,6 +282,86 @@ passively, never edited/retimed/deleted/re-exported.
 | External WebVTT parser library | More complete (styling/regions), but this project's cue subset doesn't need it | Reject |
 | Auto-import default/loaded track into the editor on open | Removes a click, but silently mixes playback and authoring state without an explicit action | Reject |
 
+## T-049.55: Tesseract OCR-to-WebVTT cue suggestions
+
+### Decision
+
+Add a sixth suggester that reads on-screen text (scoreboard/caption graphics) instead of a
+timing-only signal, closing the "every suggester today emits generic `TODO:` text, none produce
+cue *content*" gap. Speech-to-text was the first-choice option (transcribing commentary/crowd
+audio into cue text is a more direct annotation source than OCR), but it was not feasible within
+this slice's budget on this machine — see "Speech-to-text: why not this slice" below. OCR was
+feasible because [Tesseract](https://tesseract-ocr.github.io/) was already installed system-wide
+(`tesseract-ocr` 5.5.0 via apt, with `eng`/`spa` language data), so this slice needed zero install
+effort, unlike every speech option considered.
+
+```bash
+tools/suggest-ocr-vtt.sh my-play.mp4 0.10 0.5 eng > on-screen-text.vtt
+```
+
+- Reuses the exact scene-cut candidate detector from `suggest-scenecut-vtt.sh`/T-049.53
+  (arguments 2 and 3 have the same meaning: scene-score threshold, and cue duration/minimum gap
+  between candidates). Argument 4 is the Tesseract language code (default `eng`; `spa` and
+  `eng+spa` are also installed).
+- At each surviving candidate, it extracts the exact frame with FFmpeg and runs Tesseract OCR on
+  it (`--psm 6`, "assume a uniform block of text", which fits a scoreboard/caption graphic better
+  than full-page layout analysis). A frame with no recognized text produces no cue.
+- Unlike every other suggester in this file, the cue body **is** the recognized text, prefixed
+  `OCR:` so a reviewer can tell content was machine-read, not authored — for example `OCR: HOME 2
+  AWAY 1`. It is still not a claim that a play happened: OCR can misread characters, catch a
+  sponsor/broadcast graphic instead of a scoreboard, or catch nothing if the cut boundary lands
+  before the graphic finishes rendering in. Review/edit/delete each suggestion in the in-page
+  editor or an external VTT-capable tool before use, the same as every prior suggester.
+- `tools/suggest-all-vtt.sh` now runs it as a sixth suggester (tag `ocr`), lowest dedup priority
+  (an OCR cue that lands within 0.1s of another suggester's cue is folded into that cue as
+  `[also flagged by: ocr]` rather than kept standalone, since a scoreboard appearing is very often
+  also a scene cut). If Tesseract is not installed, `suggest-all-vtt.sh` skips it with a stderr
+  warning instead of failing the run, matching the existing missing-audio/video-stream skip
+  behavior for the other suggesters.
+- No model weights, browser CV, new runtime dependency, backend, account, or upload: Tesseract is
+  an existing, already-installed local CLI; the wrapper only orchestrates it and FFmpeg's existing
+  frame-extraction capability.
+
+### Speech-to-text: why not this slice
+
+Checked first, per this slice's preference order, since transcribing commentary/crowd audio is a
+more direct source of annotation-worthy text than reading on-screen graphics. Not feasible within
+~20 minutes of setup effort on this machine, `ballbox-first` (Raspberry Pi 5, aarch64, 8 GB RAM,
+no GPU):
+
+- None of `whisper.cpp`, `faster-whisper`, or `vosk` were already installed (checked `command -v`
+  for `whisper`/`whisper-cli`/`main`, and `pip3 list` for `faster-whisper`/`vosk`: all missing).
+  Every option in this list therefore needed a fresh install, unlike Tesseract.
+- At install time, the machine measured **167 MiB of 7.9 GiB RAM free, with 2.0 GiB of 2.0 GiB
+  swap already in use** (`free -h`; a `wifi-presence-log` process and a headless Chromium
+  WhatsApp-Web session were the top consumers). This machine runs other people's protected
+  infrastructure (see `~/NORTH-STAR.md`'s blast-radius inventory) concurrently with this repo's
+  work; building or first-running a new speech model here risks OOM-killing something else on the
+  box, not just this task, which the machine-budget guidance for this box explicitly warns
+  against.
+- `faster-whisper` pulls in `ctranslate2` (a compiled inference runtime) plus `onnxruntime` and
+  `tokenizers`; `vosk` pulls a prebuilt shared library. Neither is a pure-Python quick `pip
+  --user` install on aarch64 the way a pure-Python package would be, and evaluating actual wheel
+  availability/build time for this specific board was itself more than a few minutes of the
+  budget. `whisper.cpp` avoids the Python dependency chain entirely (it is a small, quick-to-build
+  C++ project with a tiny/base `ggml` model under 80 MB), but compiling anything and then loading
+  a model into working memory on a box already at ~98% RAM+swap utilization is exactly the
+  condition to avoid, not just the slowest option.
+- Recommendation for a future slice: retry `whisper.cpp` (tiny/base `ggml` model, quantized
+  `q5_0` if needed to stay well under 80 MB) specifically, once `free -h` shows the box has
+  headroom again — it is the lightest-weight option of the three and needs no Python packaging.
+  Build and run it once as a standalone check before wiring a `tools/suggest-speech-vtt.sh`
+  wrapper, so a bad memory measurement fails fast instead of inside the wrapper's test harness.
+
+### Options considered
+
+| Approach | Fit | Decision |
+| --- | --- | --- |
+| Tesseract OCR on FFmpeg scene-cut keyframes | Already installed, zero incremental install/runtime-memory cost on a memory-constrained shared box; produces real cue text (scoreboard/caption graphics) | Selected |
+| `whisper.cpp` / `faster-whisper` / `vosk` speech-to-text | Would be a more direct annotation source (commentary/crowd audio), but none were installed and the machine had ~2% RAM+swap headroom at check time — see above | Defer to a future slice, once the box has memory headroom |
+| Full-page Tesseract layout analysis (default `--psm`) | Assumes a page of prose; a scoreboard/caption graphic is a small uniform text block, so `--psm 6` reads it more reliably | Reject in favor of `--psm 6` |
+| OCR every frame (not just scene-cut candidates) | Would catch text that appears without a visual cut, but multiplies FFmpeg+Tesseract calls per second of footage for a first slice with no evidence that gap matters yet | Defer |
+
 ## T-049.54: merge all FFmpeg suggesters into one deduplicated WebVTT
 
 ### Decision

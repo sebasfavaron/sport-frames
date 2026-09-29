@@ -101,11 +101,31 @@ mínimo entre cortes. Cada cue dice `TODO: review scene cut (score …)`: un cor
 candidata de cambio visual, no una jugada. Revisalo, editá/eliminá los cues en el editor de la
 página (o cualquier herramienta VTT) antes de usarlo. No sube video ni agrega UI, estado o backend.
 
+## Sugerir cues WebVTT con el texto en pantalla (OCR)
+
+A diferencia de los detectores anteriores, que sólo sugieren timing con texto genérico
+(`TODO: review …`), este helper usa [Tesseract](https://tesseract-ocr.github.io/) (ya instalado
+en esta máquina) para leer el texto real de gráficos en pantalla (marcador, cartel) en cada frame
+candidato de cambio de escena, y lo pone directo en el cuerpo del cue:
+
+```bash
+tools/suggest-ocr-vtt.sh mi-jugada.mp4 0.10 0.5 eng > texto-en-pantalla.vtt
+```
+
+Los primeros tres argumentos son iguales a `suggest-scenecut-vtt.sh` (umbral de score de escena,
+duración/gap mínimo entre candidatos); el cuarto es el idioma de Tesseract (default `eng`; `spa` y
+`eng+spa` también están instalados). Un frame sin texto reconocible no genera cue. Cada cue dice
+`OCR: <texto reconocido>`: el OCR puede confundir caracteres o leer un gráfico que no es un
+marcador, así que sigue siendo una sugerencia para revisar, no una anotación automática. No sube
+video, no agrega modelo nuevo, backend, cuenta ni dependencia de runtime (Tesseract es un CLI
+local que ya estaba instalado). Detalle de por qué se eligió OCR y no speech-to-text para este
+slice: [`docs/live-annotations.md`](docs/live-annotations.md).
+
 ## Sugerir cues WebVTT combinando todos los detectores
 
 En vez de correr cada detector por separado y unir los `.vtt` a mano, este helper corre los
-cinco (`scenecut`, `black`, `freeze`, `quiet` vía `silencedetect`, `loudpeak` vía `astats`) con
-sus umbrales por defecto y devuelve un único WebVTT ordenado por tiempo:
+seis (`scenecut`, `black`, `freeze`, `quiet` vía `silencedetect`, `loudpeak` vía `astats`, `ocr`
+vía Tesseract) con sus umbrales por defecto y devuelve un único WebVTT ordenado por tiempo:
 
 ```bash
 tools/suggest-all-vtt.sh mi-jugada.mp4 > sugerencias.vtt
@@ -113,10 +133,10 @@ tools/suggest-all-vtt.sh mi-jugada.mp4 > sugerencias.vtt
 
 Si dos detectores sugieren cues con inicio y fin casi idénticos (±0.1s), se quedan con uno solo y
 agregan `[also flagged by: NOMBRE]` al cuerpo del cue que sobrevive, para no revisar el mismo
-instante dos veces. Un detector cuyo stream (video o audio) falte en el archivo se saltea con un
-aviso por stderr; cualquier otro error del detector aborta el wrapper. Sigue sin haber modelo,
-CV de browser, dependencia nueva, backend, cuenta o subida: es sólo orquestación de los cinco
-scripts existentes.
+instante dos veces. Un detector cuyo stream (video o audio) falte en el archivo, o cuya
+herramienta externa no esté instalada (Tesseract, para `ocr`), se saltea con un aviso por stderr;
+cualquier otro error del detector aborta el wrapper. Sigue sin haber modelo nuevo, CV de browser,
+dependencia nueva, backend, cuenta o subida: es sólo orquestación de los seis scripts existentes.
 
 ## Preview de anotación en vivo
 
