@@ -282,6 +282,38 @@ passively, never edited/retimed/deleted/re-exported.
 | External WebVTT parser library | More complete (styling/regions), but this project's cue subset doesn't need it | Reject |
 | Auto-import default/loaded track into the editor on open | Removes a click, but silently mixes playback and authoring state without an explicit action | Reject |
 
+## T-049.53: FFmpeg scene-cut-to-WebVTT cue suggestions
+
+### Decision
+
+Give the scene-change detector from T-049.1 a WebVTT-emitting sibling, matching the
+black/freeze/silence/loud-peak suggesters instead of the older HTML caption-anchor output.
+
+```bash
+tools/suggest-scenecut-vtt.sh my-play.mp4 0.30 0.5 > scene-cuts.vtt
+```
+
+- Argument 2 is the FFmpeg scene-score threshold (`0`–`1`), same semantics as
+  `suggest-caption-anchors.sh`; argument 3 is both the emitted cue duration and the minimum gap
+  used to de-duplicate nearby cuts.
+- Cues say `TODO: review scene cut (score …)`: a scene cut is a visual-change candidate, not a
+  claim that a play happened there. Review/delete/replace them in the in-page editor or an
+  external VTT-capable tool before use.
+- The helper reuses the exact `select='gt(scene,X)'` + `metadata=print` pipeline T-049.1 already
+  validated; only the output format changes (WebVTT to stdout instead of paste-ready HTML), so it
+  loads through the existing local WebVTT import (T-049.5) or the editor's Import .vtt (T-049.10)
+  like every other signal-based suggester. No model, browser CV, new dependency, backend, account,
+  or upload.
+
+### Options considered
+
+| Approach | Fit | Decision |
+| --- | --- | --- |
+| Reuse T-049.1's scene detector, emit WebVTT | Closes the format gap: every other signal (T-049.6/.7/.8/.19) already emits editor-loadable WebVTT; scene cuts only ever produced HTML anchors | Selected |
+| Audio-energy onset/transient detector | A genuinely new signal, but T-049.19's `astats` RMS-window loud-peak suggester already covers the practical audio-energy case for this codebase | Defer |
+| One-click "load suggestion .vtt as draft cues for review" in the editor | Already substantially covered: T-049.10 imports any `.vtt` (including suggestion output) straight into `editorCues`, and T-049.44 layers suggestion timestamps in as snap-to markers | Reject as duplicate |
+| Sports CV/highlight-detection service | Could label plays directly, but needs vendor/model/upload evaluation and still needs editorial review | Out of scope |
+
 ## T-049.16: warn about cues beyond video duration
 
 ### Decision

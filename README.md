@@ -86,6 +86,21 @@ pausa o problema de la fuente, no una jugada. Revisalo, editá/eliminá los cues
 VTT y cargalo temporalmente con el input WebVTT de la página. No sube video ni agrega UI, estado,
 backend o dependencia de runtime.
 
+## Sugerir cues WebVTT por cambio de escena
+
+El mismo detector de cambios de escena que usa `suggest-caption-anchors.sh` para anchors HTML
+también puede emitir cues WebVTT portables, cargables directo en el editor de la página:
+
+```bash
+tools/suggest-scenecut-vtt.sh mi-jugada.mp4 0.30 0.5 > cortes.vtt
+```
+
+El segundo argumento es el umbral de score de escena de FFmpeg (0–1; bajalo para deportes con
+mucha cámara en movimiento); el tercero es la duración de cada cue sugerido y también el gap
+mínimo entre cortes. Cada cue dice `TODO: review scene cut (score …)`: un corte de escena es una
+candidata de cambio visual, no una jugada. Revisalo, editá/eliminá los cues en el editor de la
+página (o cualquier herramienta VTT) antes de usarlo. No sube video ni agrega UI, estado o backend.
+
 ## Preview de anotación en vivo
 
 Abrí la página con `?annotation-preview` (por ejemplo

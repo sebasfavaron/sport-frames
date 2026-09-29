@@ -16,6 +16,19 @@ Fields:
 
 ## Items
 
+### T-049.53 - FFmpeg scene-cut-to-WebVTT cue suggestions
+
+- status: `done`
+- goal: give the scene-change detector already used for T-049.1's HTML caption anchors a WebVTT-emitting sibling, so scene-cut candidates load straight into the in-page cue editor like every other signal (silence, freeze, black, loud-peak) instead of only into the older HTML caption flow
+- source: `T-049 standing criterion; worker-selected narrow slice 2026-09-28 — steering back to annotation *generation* after ~20 editor-ergonomics slices (T-049.33-T-049.52)`
+- workspace: `/home/sebas/work/projects/sport-frames`
+- next_step:
+  - select the next narrow live-annotation improvement
+- notes:
+  - completed: `tools/suggest-scenecut-vtt.sh VIDEO [SCENE_THRESHOLD] [MIN_GAP_SECONDS]` reuses the exact FFmpeg `select='gt(scene,X)'` + `metadata=print` detector T-049.1 already validated, but writes standard WebVTT to stdout instead of paste-ready HTML: one `scenecut-N` cue per surviving cut, timed from the cut frame through `MIN_GAP_SECONDS` (also the same value used to de-duplicate nearby cuts), with body `TODO: review scene cut (score X.XXX)`. Defaults (`SCENE_THRESHOLD=0.30`, `MIN_GAP_SECONDS=0.5`) match the existing caption-anchor default. Output loads directly through the existing local WebVTT import (T-049.5) or the in-page editor's Import .vtt (T-049.10), exactly like the black/freeze/silence/loud-peak suggesters. No model, browser CV, new dependency, backend, account, or upload; a scene cut is still only a visual-change candidate, not a claim about a play
+  - verified 2026-09-28: `node --check script.js`; `node --check` for every `tools/verify-*.js`; `bash -n tools/*.sh`; `git diff --check`; all pre-existing `tools/verify-*.js` harnesses plus new `tools/verify-t04953.js`, which is a real functional test (not a vm-extraction check, since this slice is a shell tool, not `script.js`): it generates a synthetic 3-second, 3-solid-color FFmpeg clip with hard scene-score spikes at 1.000s/2.000s, runs the shipped script against it, and asserts real stdout — exactly 2 cues at the right start times and duration, a raised threshold correctly gating out the weaker cut, and a flat cut-free clip yielding zero cues — plus argument-validation exit codes (`2` for no args/bad threshold/bad min-gap, `1` for a missing file) with no fixture video needed for those
+- tags: [project:sport-frames, type:ffmpeg-scenecut-webvtt-suggestions, criterion:live-annotations]
+
 ### T-049.52 - Fixed screen regions for WebVTT cues
 
 - status: `done`
