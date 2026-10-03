@@ -322,7 +322,7 @@ tools/suggest-ocr-vtt.sh my-play.mp4 0.10 0.5 eng > on-screen-text.vtt
   an existing, already-installed local CLI; the wrapper only orchestrates it and FFmpeg's existing
   frame-extraction capability.
 
-### Speech-to-text: why not this slice
+### Speech-to-text: why not this slice (superseded by T-049.56)
 
 Checked first, per this slice's preference order, since transcribing commentary/crowd audio is a
 more direct source of annotation-worthy text than reading on-screen graphics. Not feasible within
@@ -353,6 +353,15 @@ no GPU):
   Build and run it once as a standalone check before wiring a `tools/suggest-speech-vtt.sh`
   wrapper, so a bad memory measurement fails fast instead of inside the wrapper's test harness.
 
+**Correction (T-049.56, 2026-10-02):** the first bullet above was wrong. `whisper.cpp` *was*
+already built on this machine the whole time — not for sport-frames, but as part of a separate
+`voice-system` project at `/home/sebas/runtime/voice-system` (binary
+`build/whisper.cpp/bin/whisper-cli`, model `models/ggml-large-v3-turbo-q5_0.bin`, 548 MB). The
+`command -v whisper`/`whisper-cli`/`main` check in the original slice only looked on `$PATH`; it
+never looked for other projects' already-built binaries elsewhere on the filesystem. T-049.56
+reuses that exact build instead of installing anything. See T-049.56 below for what actually
+shipped, and for an intermittent whisper runtime failure that investigation surfaced.
+
 ### Options considered
 
 | Approach | Fit | Decision |
@@ -361,6 +370,75 @@ no GPU):
 | `whisper.cpp` / `faster-whisper` / `vosk` speech-to-text | Would be a more direct annotation source (commentary/crowd audio), but none were installed and the machine had ~2% RAM+swap headroom at check time — see above | Defer to a future slice, once the box has memory headroom |
 | Full-page Tesseract layout analysis (default `--psm`) | Assumes a page of prose; a scoreboard/caption graphic is a small uniform text block, so `--psm 6` reads it more reliably | Reject in favor of `--psm 6` |
 | OCR every frame (not just scene-cut candidates) | Would catch text that appears without a visual cut, but multiplies FFmpeg+Tesseract calls per second of footage for a first slice with no evidence that gap matters yet | Defer |
+
+## T-049.56: whisper.cpp speech-to-WebVTT cue suggestions
+
+### Decision
+
+Add a seventh suggester that transcribes the audio track with the `whisper.cpp` build already on
+this machine (the T-049.55 note above was wrong: it was never missing, just built for a different
+project — see the correction inline in T-049.55).
+
+```bash
+tools/suggest-speech-vtt.sh my-play.mp4 es > speech.vtt
+```
+
+- Binary/model paths default to `voice-system`'s existing build
+  (`~/runtime/voice-system/build/whisper.cpp/bin/whisper-cli`,
+  `~/runtime/voice-system/models/ggml-large-v3-turbo-q5_0.bin`) and are overridable via
+  `SPORT_FRAMES_WHISPER_CLI`/`SPORT_FRAMES_WHISPER_MODEL`. Argument 2 is a whisper language code
+  (default `en`). FFmpeg extracts a 16 kHz mono WAV to a temp dir; `whisper-cli -t 3 -ovtt` does
+  the transcription; the script re-emits whisper's own segment timing as WebVTT, each cue body
+  prefixed `SPEECH:` (same convention as OCR's `OCR:` prefix) so a reviewer knows it was
+  machine-transcribed, not authored. Segments with no letters or digits outside bracketed tags
+  are dropped: whisper emits `!!!!…` or `[BLANK_AUDIO]` on silence and tones, which are not speech.
+- `tools/suggest-all-vtt.sh` now runs it as a seventh suggester (tag `speech`, lowest dedup
+  priority, same tier as `ocr`), skipping with a stderr warning — not aborting — both when
+  whisper-cli/its model are absent and when whisper-cli fails at runtime (exit `3`, e.g. "failed
+  to initialize whisper context"). The runtime skip is new relative to the FFmpeg suggesters and
+  is scoped to this one: speech depends on a model shared with another project on a
+  memory-tight box, and a failure there must not discard the other suggesters' cues.
+- No model weights, browser CV, new runtime dependency, backend, account, or upload: whisper.cpp
+  and its model are an existing local build from another project; the wrapper only shells out.
+
+### Whisper runtime instability on this machine (not a sport-frames bug)
+
+While testing this suggester, whisper-cli on this Pi intermittently returned wrong output for
+byte-identical input: `!!!!…` for the 30s window (on the `samples/jfk.wav` smoke clip, and on the
+verify-t04954 tone fixture), and later `error: failed to initialize whisper context` (exit `3`).
+The same binary, args and model transcribed `jfk.wav` correctly earlier the same day.
+
+What was checked:
+- The model file's sha256 is `394221709cd5ad1f40c46e6031ca61bce88931e6e088c188294c6d5a55ffa7e2`
+  on every cold read (`posix_fadvise(DONTNEED)` then read), and that is the `model_sha256`
+  `voice-system` recorded in `inbox/transcripts.jsonl` for good transcripts. The file content is
+  not the problem.
+- The model file was re-created during the session (new inode, same size and hash), so something
+  copied it; that did not change the content.
+- Not reproduced: a sha256 that varies between reads.
+
+Not determined: whether the fault is RAM/swap pressure (swap was fully used during testing),
+the USB disk under `/mnt/rpi`, or the CPU. It is outside this repo and not fixed here.
+
+How the suggester copes:
+- The `!!!!` output is removed by the letter/digit filter, so garbage never becomes a cue.
+- A load or inference failure (exit `3`) is a skip with a warning in `suggest-all-vtt.sh`.
+- `tools/verify-t04956.js` tests the wrapper deterministically with a fake whisper-cli (cue
+  filtering, exit `3` forwarding, paths). Its real-transcription check runs whisper-cli on the
+  known sample first. If whisper-cli itself does not produce the known word, that check is
+  skipped with a loud message rather than failing the gate, because it would then be testing
+  whisper's health, not this repo.
+- `tools/verify-t04954.js`'s with-audio assertion now checks only the audio-stream suggesters
+  (`quiet`, `loudpeak`) for skips. Speech is excluded there because its skip depends on whisper.
+
+### Options considered
+
+| Approach | Fit | Decision |
+| --- | --- | --- |
+| `whisper.cpp` build already installed for `voice-system`, reused via explicit paths | Zero install, zero incremental disk/runtime-dependency cost; real transcribed cue text | Selected |
+| Install a fresh/smaller whisper.cpp model just for sport-frames | Would dodge the `voice-system` model's disk-health problem, but duplicates a 500MB+ class asset already present on the box for no benefit to this project | Reject |
+| `-oj` (JSON output) + custom timestamp conversion instead of `-ovtt` | Equivalent information, but `-ovtt` already emits standard WebVTT timing, so converting it is a pure string rewrite instead of a schema parse | Reject in favor of `-ovtt` |
+| Treat any whisper-cli runtime failure the same as every FFmpeg suggester (abort the wrapper) | Simpler, fewer special cases | Reject: whisper output and model load were observed to fail intermittently on this machine, and a shared-model failure should not discard the other suggesters' cues |
 
 ## T-049.54: merge all FFmpeg suggesters into one deduplicated WebVTT
 

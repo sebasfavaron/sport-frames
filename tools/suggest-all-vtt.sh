@@ -9,20 +9,26 @@ usage() {
 Usage: suggest-all-vtt.sh VIDEO
 
 Runs suggest-scenecut-vtt.sh, suggest-black-vtt.sh, suggest-freeze-vtt.sh,
-suggest-silence-vtt.sh, suggest-loudpeak-vtt.sh, and suggest-ocr-vtt.sh
-against VIDEO with each suggester's default thresholds, then merges every
-suggested cue into one WebVTT on stdout: sorted by start time, and
-de-duplicated whenever two suggesters propose cues whose start and end each
-land within 0.1s of a cue already kept (the earlier suggester in the list
-above wins the kept identifier/body; the dropped suggester's name is
+suggest-silence-vtt.sh, suggest-loudpeak-vtt.sh, suggest-ocr-vtt.sh, and
+suggest-speech-vtt.sh against VIDEO with each suggester's default thresholds,
+then merges every suggested cue into one WebVTT on stdout: sorted by start
+time, and de-duplicated whenever two suggesters propose cues whose start and
+end each land within 0.1s of a cue already kept (the earlier suggester in the
+list above wins the kept identifier/body; the dropped suggester's name is
 appended to the surviving cue's body as "also flagged by: NAME").
 
 A suggester whose required stream (video or audio) is missing from VIDEO, or
-whose required external tool (Tesseract, for suggest-ocr-vtt.sh) is not
-installed, is skipped with a warning on stderr; any other suggester failure
-aborts this script with that suggester's exit status. This wrapper adds no
-new signal, threshold, model, or dependency: it only runs the existing
-per-signal suggesters and merges their already-reviewed-as-TODO output.
+whose required external tool (Tesseract, for suggest-ocr-vtt.sh; whisper-cli
+and its model, for suggest-speech-vtt.sh, overridable via
+SPORT_FRAMES_WHISPER_CLI/SPORT_FRAMES_WHISPER_MODEL) is not available, is
+skipped with a warning on stderr. suggest-speech-vtt.sh failing to transcribe
+at runtime (its whisper-cli exiting status 3, e.g. the model failing to load)
+is also skipped with a warning, because that failure comes from a shared
+model on this machine, not from the video, and must not discard the other
+suggesters' cues. Any other suggester failure aborts this script with that
+suggester's exit status. This wrapper adds no new signal, threshold, model, or
+dependency: it only runs the existing per-signal suggesters and merges their
+already-reviewed output.
 EOF
   exit 2
 }
@@ -45,7 +51,11 @@ suggesters=(
   "quiet:suggest-silence-vtt.sh"
   "loudpeak:suggest-loudpeak-vtt.sh"
   "ocr:suggest-ocr-vtt.sh"
+  "speech:suggest-speech-vtt.sh"
 )
+
+speech_whisper_cli="${SPORT_FRAMES_WHISPER_CLI:-/home/sebas/runtime/voice-system/build/whisper.cpp/bin/whisper-cli}"
+speech_whisper_model="${SPORT_FRAMES_WHISPER_MODEL:-/home/sebas/runtime/voice-system/models/ggml-large-v3-turbo-q5_0.bin}"
 
 raw=$(mktemp)
 trap 'rm -f "$raw"' EXIT
@@ -55,6 +65,11 @@ for entry in "${suggesters[@]}"; do
   script_name=${entry#*:}
   if [[ "$script_name" == "suggest-ocr-vtt.sh" ]] && ! command -v tesseract >/dev/null; then
     echo "warning: skipping $source_tag ($script_name requires tesseract, which is not installed)" >&2
+    continue
+  fi
+  if [[ "$script_name" == "suggest-speech-vtt.sh" ]] \
+    && { [[ ! -x "$speech_whisper_cli" ]] || [[ ! -r "$speech_whisper_model" ]]; }; then
+    echo "warning: skipping $source_tag ($script_name requires whisper-cli and its model, which are not available)" >&2
     continue
   fi
   set +e
@@ -74,6 +89,8 @@ for entry in "${suggesters[@]}"; do
     ' >> "$raw"
   elif [[ $status -eq 1 ]]; then
     echo "warning: skipping $source_tag ($script_name has no matching stream)" >&2
+  elif [[ "$script_name" == "suggest-speech-vtt.sh" ]] && [[ $status -eq 3 ]]; then
+    echo "warning: skipping $source_tag (whisper-cli failed to transcribe; its model may be unavailable or corrupted)" >&2
   else
     echo "error: $script_name failed with status $status" >&2
     exit "$status"

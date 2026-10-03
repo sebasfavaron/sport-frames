@@ -120,7 +120,10 @@ try {
   {
     const result = run([withAudioVideo]);
     assert.equal(result.status, 0, "clip with audio exits 0");
-    assert.doesNotMatch(result.stderr, /skipping/, "an audio stream is present, so no suggester is skipped");
+    // Speech (T-049.56) is excluded here: it needs whisper-cli and its model,
+    // a shared external dependency that can fail independently of the audio
+    // stream. Its skip path is covered by verify-t04956.js.
+    assert.doesNotMatch(result.stderr, /skipping (quiet|loudpeak)/, "an audio stream is present, so the audio suggesters are not skipped");
 
     const cues = parseCues(result.stdout);
     const freeze = cues.find((cue) => cue.identifier === "freeze-1");

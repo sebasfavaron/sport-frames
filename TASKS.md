@@ -16,6 +16,23 @@ Fields:
 
 ## Items
 
+### T-049.56 - whisper.cpp speech-to-WebVTT cue suggestions
+
+- status: `done`
+- goal: give reviewers a suggester that produces cue *text* from the spoken audio (commentary, referee calls), reusing the whisper.cpp build already on this machine instead of the speech-to-text work T-049.55 deferred
+- source: `T-049 standing criterion; worker-selected narrow slice 2026-10-01 — follow-up to T-049.55's "Speech-to-text: why not this slice", after finding whisper.cpp already built in the voice-system project`
+- workspace: `/home/sebas/work/projects/sport-frames`
+- next_step:
+  - select the next narrow live-annotation improvement
+  - if whisper output is still wrong on this machine, check the whisper runtime first (see `docs/live-annotations.md` T-049.56 "Whisper runtime instability"); the suggester already drops garbage segments and skips on exit 3
+- notes:
+  - completed: `tools/suggest-speech-vtt.sh VIDEO [LANG]` extracts 16 kHz mono WAV with FFmpeg and runs `whisper-cli -ovtt` from `~/runtime/voice-system` (overridable via `SPORT_FRAMES_WHISPER_CLI`/`SPORT_FRAMES_WHISPER_MODEL`). It re-emits whisper's own segment timing as WebVTT, each body prefixed `SPEECH:`, and drops segments with no letters or digits outside bracketed tags (`!!!!`, `[BLANK_AUDIO]`). `tools/suggest-all-vtt.sh` runs it as a seventh suggester (tag `speech`); it skips with a warning when whisper-cli or its model is missing, or when whisper-cli exits 3 at runtime. Other failures still abort
+  - `tools/verify-t04954.js` change, justified: its with-audio assertion was "no suggester skipped". Speech now runs on that clip and depends on whisper, so the assertion checks only `quiet`/`loudpeak` (the audio-stream suggesters t04954 tests). Speech's skip path is covered by `tools/verify-t04956.js`
+  - verified 2026-10-03: `for f in tools/verify-*.js; do node "$f" || exit 1; done` exits 0, including new `tools/verify-t04956.js` (fake whisper-cli for filter, exit-3 forwarding and path checks; real jfk transcription check, skipped with a loud message when whisper-cli itself does not produce the known word)
+  - known issue, not fixed here: whisper-cli on this machine was intermittently wrong (`!!!!` output, or context init failure) on identical input; model sha256 is unchanged. See `docs/live-annotations.md` T-049.56
+  - options considered, recorded in `docs/live-annotations.md` under T-049.56
+- tags: [project:sport-frames, type:speech-webvtt, criterion:sport-frames]
+
 ### T-049.55 - Tesseract OCR-to-WebVTT cue suggestions
 
 - status: `done`

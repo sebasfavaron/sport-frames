@@ -121,11 +121,35 @@ video, no agrega modelo nuevo, backend, cuenta ni dependencia de runtime (Tesser
 local que ya estaba instalado). Detalle de por qué se eligió OCR y no speech-to-text para este
 slice: [`docs/live-annotations.md`](docs/live-annotations.md).
 
+## Sugerir cues WebVTT con el audio hablado (whisper.cpp)
+
+Este helper transcribe el audio con el [whisper.cpp](https://github.com/ggml-org/whisper.cpp) ya
+compilado en esta máquina (proyecto `voice-system`) y pone la transcripción directo en el cuerpo
+del cue, igual que el de OCR pero a partir de la voz en lugar de texto en pantalla:
+
+```bash
+tools/suggest-speech-vtt.sh mi-jugada.mp4 es > habla.vtt
+```
+
+El segundo argumento es el código de idioma de whisper (default `en`; `auto` deja que whisper lo
+detecte). El binario y el modelo son configurables vía las variables de entorno
+`SPORT_FRAMES_WHISPER_CLI` / `SPORT_FRAMES_WHISPER_MODEL` (por default apuntan al build e
+instalación ya existentes de `voice-system` en `~/runtime/voice-system`). Cada cue dice
+`SPEECH: <texto transcripto>`: la transcripción puede tener errores, segmentos parciales, o leer
+comentario/ruido de la cancha fuera de contexto, así que sigue siendo una sugerencia para revisar,
+no una anotación automática. Si el video no tiene audio, o el binario/modelo de whisper no están
+disponibles, el script avisa por stderr y no genera cues. No sube audio/video, no descarga ni
+commitea pesos de modelo, no agrega backend, cuenta ni dependencia de runtime nueva: whisper.cpp y
+su modelo ya existían, instalados para otro proyecto en esta misma máquina. Detalle de por qué se
+descartó speech-to-text en el slice anterior (T-049.55) y qué cambió:
+[`docs/live-annotations.md`](docs/live-annotations.md).
+
 ## Sugerir cues WebVTT combinando todos los detectores
 
 En vez de correr cada detector por separado y unir los `.vtt` a mano, este helper corre los
-seis (`scenecut`, `black`, `freeze`, `quiet` vía `silencedetect`, `loudpeak` vía `astats`, `ocr`
-vía Tesseract) con sus umbrales por defecto y devuelve un único WebVTT ordenado por tiempo:
+siete (`scenecut`, `black`, `freeze`, `quiet` vía `silencedetect`, `loudpeak` vía `astats`, `ocr`
+vía Tesseract, `speech` vía whisper.cpp) con sus umbrales por defecto y devuelve un único WebVTT
+ordenado por tiempo:
 
 ```bash
 tools/suggest-all-vtt.sh mi-jugada.mp4 > sugerencias.vtt
@@ -134,9 +158,12 @@ tools/suggest-all-vtt.sh mi-jugada.mp4 > sugerencias.vtt
 Si dos detectores sugieren cues con inicio y fin casi idénticos (±0.1s), se quedan con uno solo y
 agregan `[also flagged by: NOMBRE]` al cuerpo del cue que sobrevive, para no revisar el mismo
 instante dos veces. Un detector cuyo stream (video o audio) falte en el archivo, o cuya
-herramienta externa no esté instalada (Tesseract, para `ocr`), se saltea con un aviso por stderr;
-cualquier otro error del detector aborta el wrapper. Sigue sin haber modelo nuevo, CV de browser,
-dependencia nueva, backend, cuenta o subida: es sólo orquestación de los seis scripts existentes.
+herramienta externa no esté instalada (Tesseract, para `ocr`; whisper-cli y su modelo, para
+`speech`), se saltea con un aviso por stderr; si whisper-cli falla al transcribir en tiempo de
+ejecución (por ejemplo un modelo externo dañado) también se saltea con aviso en vez de abortar,
+porque esa falla depende de la salud del modelo externo, no del código de este repo. Cualquier
+otro error del detector aborta el wrapper. Sigue sin haber modelo nuevo, CV de browser, dependencia
+nueva, backend, cuenta o subida: es sólo orquestación de los siete scripts existentes.
 
 ## Preview de anotación en vivo
 
