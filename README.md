@@ -137,7 +137,8 @@ detecte). El binario y el modelo son configurables vía las variables de entorno
 instalación ya existentes de `voice-system` en `~/runtime/voice-system`). Cada cue dice
 `SPEECH: <texto transcripto>`: la transcripción puede tener errores, segmentos parciales, o leer
 comentario/ruido de la cancha fuera de contexto, así que sigue siendo una sugerencia para revisar,
-no una anotación automática. Si el video no tiene audio, o el binario/modelo de whisper no están
+no una anotación automática. Los segmentos con fin no posterior al inicio se descartan, porque el
+importador del editor los omitiría sin avisar. Si el video no tiene audio, o el binario/modelo de whisper no están
 disponibles, el script avisa por stderr y no genera cues. No sube audio/video, no descarga ni
 commitea pesos de modelo, no agrega backend, cuenta ni dependencia de runtime nueva: whisper.cpp y
 su modelo ya existían, instalados para otro proyecto en esta misma máquina. Detalle de por qué se

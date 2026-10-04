@@ -16,6 +16,22 @@ Fields:
 
 ## Items
 
+### T-049.57 - Drop zero-length speech segments before the editor import
+
+- status: `done`
+- goal: make the speech suggester's WebVTT survive the in-page editor import intact, so no cue is lost silently between `tools/suggest-speech-vtt.sh` and Import .vtt
+- source: `T-049 standing criterion; worker-selected narrow slice 2026-10-03 — closing the suggester-to-editor loop for T-049.56's speech output, rather than adding another detector`
+- workspace: `/home/sebas/work/projects/sport-frames`
+- next_step:
+  - decide whether `TODO: review ...` suggestion bodies should show "Needs annotation text" in the editor (found, not changed; `docs/live-annotations.md` T-049.57 "Found, not changed"). That reverses a decision asserted by `tools/verify-empty-cue-body-warning.js`, so it needs Sebas
+  - select the next narrow live-annotation improvement
+- notes:
+  - completed: `tools/suggest-speech-vtt.sh` now drops whisper segments whose end is not after their start, the same `end > start` guard black/freeze use. The editor's `parseVttCues` silently discards such cues and reports only the kept count, so they were lost with no message. Kept cues stay numbered without gaps
+  - verified 2026-10-03: `tools/verify-t04957.js` fails before the fix (exact-output assertion shows the zero-length and reversed cues) and passes after it. It also runs the editor's own `parseVttCues`, extracted from `script.js`, on the output and checks the surviving cue's identifier, text, and timing
+  - whisper was not run. This Pi had 1.1 GiB available and swap full. For the full verifier run, `SPORT_FRAMES_WHISPER_CLI` pointed at a stub that emits no speech, so the real-transcription check in `tools/verify-t04956.js` skipped loudly. All 42 `tools/verify-*.js` pass; `bash -n tools/*.sh`, `node --check script.js`, `git diff --check` clean
+  - options considered, recorded in `docs/live-annotations.md` under T-049.57
+- tags: [project:sport-frames, type:speech-webvtt-zero-length-drop, criterion:live-annotations]
+
 ### T-049.56 - whisper.cpp speech-to-WebVTT cue suggestions
 
 - status: `done`

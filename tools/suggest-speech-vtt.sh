@@ -22,7 +22,9 @@ LANG is a whisper.cpp language code (default "en"; "auto" lets whisper
 detect it). Segments with no letters or digits outside bracketed tags (whisper's
 "!!!!" or "[BLANK_AUDIO]" on silence or tones) are dropped. If the video has no
 audio stream, or whisper-cli/the model are not available, this exits with a
-warning instead of a cue.
+warning instead of a cue. Segments whose end is not after their start (zero or
+negative length) are also dropped, because the in-page editor importer would
+discard them silently.
 Defaults: LANG=en
 EOF
   exit 2
@@ -73,6 +75,10 @@ echo "WEBVTT"
 echo
 
 awk '
+  function to_seconds(ts,    parts) {
+    split(ts, parts, ":")
+    return parts[1] * 3600 + parts[2] * 60 + parts[3]
+  }
   function print_cue() {
     gsub(/-->/, "->", text)
     gsub(/^[[:space:]]+|[[:space:]]+$/, "", text)
@@ -81,6 +87,10 @@ awk '
     stripped = text
     gsub(/\[[^]]*\]/, "", stripped)
     if (stripped !~ /[A-Za-z0-9]/) { return }
+    # The in-page editor importer drops cues whose end is not after their
+    # start, silently; drop them here (as black/freeze do) so the count is honest.
+    split(timing, bounds, / --> /)
+    if (to_seconds(bounds[2]) <= to_seconds(bounds[1])) { return }
     n++
     print "speech-" n
     print timing

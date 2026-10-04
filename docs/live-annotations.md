@@ -371,6 +371,44 @@ shipped, and for an intermittent whisper runtime failure that investigation surf
 | Full-page Tesseract layout analysis (default `--psm`) | Assumes a page of prose; a scoreboard/caption graphic is a small uniform text block, so `--psm 6` reads it more reliably | Reject in favor of `--psm 6` |
 | OCR every frame (not just scene-cut candidates) | Would catch text that appears without a visual cut, but multiplies FFmpeg+Tesseract calls per second of footage for a first slice with no evidence that gap matters yet | Defer |
 
+## T-049.57: drop zero-length speech segments before the editor import
+
+### Decision
+
+Make the speech suggester (T-049.56) emit only cues the in-page editor will keep. The editor's
+WebVTT importer (`parseVttCues`) discards any cue whose end is not after its start, and it reports
+only the count it kept, so a whisper segment with equal or reversed timing vanished with no
+message.
+
+- `tools/suggest-speech-vtt.sh` drops segments whose end is not after their start, the same
+  `end > start` guard black and freeze already use. Kept cues are numbered without gaps.
+- The editor is unchanged. Its importer's behaviour is the reason, and it is the contract a
+  reviewer relies on.
+- `tools/verify-t04957.js` runs the shipped script against a fake whisper-cli that emits a
+  zero-length, a valid, and a reversed segment. It asserts the exact WebVTT output, then runs the
+  editor's own `parseVttCues` (extracted from `script.js`) on it and asserts the surviving cue's
+  identifier, text, and timing. Reverting the guard fails the exact-output assertion.
+- No whisper model is run: the check is deterministic and safe on this memory-tight Pi.
+
+### Found, not changed: suggester placeholders are not flagged as needing review
+
+Imported suggester cues whose body is `TODO: review ...` (scenecut, black, freeze, quiet,
+loudpeak) are not shown with "Needs annotation text". `findEmptyCueBodies` flags only an empty body
+or a bare `TODO`, and `tools/verify-empty-cue-body-warning.js` asserts that `TODO: review` is not
+flagged. That was a deliberate earlier decision, so this slice does not change it. A reviewer
+loading a suggestion file therefore gets no review queue. Deciding whether `TODO:`-prefixed bodies
+should be flagged is left to Sebas.
+
+### Options considered
+
+| Approach | Fit | Decision |
+| --- | --- | --- |
+| Drop non-positive-length segments in the suggester | Matches black/freeze; the output count is honest and the editor is unchanged | Selected |
+| Widen zero-length segments to a minimum duration | Keeps the transcript line, but invents timing that whisper did not produce, and picks a new threshold | Reject |
+| Make the editor importer keep zero-length cues | Changes a parser contract that other tools and verifiers depend on, and a zero-length cue is not playable | Reject |
+| Flag `TODO:`-prefixed suggestion bodies as needing review | Real value for the review loop, but reverses the existing `verify-empty-cue-body-warning.js` decision | Defer to Sebas (see above) |
+| Real-whisper check of this slice | Needs a model load on a Pi with 1.1 GiB free and swap full | Reject: the fake whisper-cli covers the code path |
+
 ## T-049.56: whisper.cpp speech-to-WebVTT cue suggestions
 
 ### Decision
