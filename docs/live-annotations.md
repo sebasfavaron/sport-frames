@@ -397,7 +397,8 @@ loudpeak) are not shown with "Needs annotation text". `findEmptyCueBodies` flags
 or a bare `TODO`, and `tools/verify-empty-cue-body-warning.js` asserts that `TODO: review` is not
 flagged. That was a deliberate earlier decision, so this slice does not change it. A reviewer
 loading a suggestion file therefore gets no review queue. Deciding whether `TODO:`-prefixed bodies
-should be flagged is left to Sebas.
+should be flagged is left to Sebas. Resolved in T-049.58 with a separate per-cue flag, not by
+changing the empty-text check.
 
 ### Options considered
 
@@ -408,6 +409,38 @@ should be flagged is left to Sebas.
 | Make the editor importer keep zero-length cues | Changes a parser contract that other tools and verifiers depend on, and a zero-length cue is not playable | Reject |
 | Flag `TODO:`-prefixed suggestion bodies as needing review | Real value for the review loop, but reverses the existing `verify-empty-cue-body-warning.js` decision | Defer to Sebas (see above) |
 | Real-whisper check of this slice | Needs a model load on a Pi with 1.1 GiB free and swap full | Reject: the fake whisper-cli covers the code path |
+
+## T-049.58: flag unreviewed suggester placeholders in the editor
+
+### Decision
+
+Give a reviewer a review queue for the `TODO: review …` cues the FFmpeg suggesters emit, without
+changing what counts as empty text. T-049.57 found that these cues were not flagged, and the
+existing `tools/verify-empty-cue-body-warning.js` asserts that `TODO: review` is not "empty". That
+decision stays: a placeholder is not missing text, it is unreviewed machine output, so it gets its
+own signal.
+
+- The prefix is `TODO: review ` (trailing space). `verify-t04958.js` reads the five emitters
+  (scene cut, black, freeze, silence, loudpeak) and fails if any stops printing it. OCR (`OCR:`) and
+  speech (`SPEECH:`) bodies are machine-read text, not placeholders, and are not flagged.
+- Each affected list item shows **Unreviewed suggester placeholder**. The toolbar reports the count,
+  and the cue also appears in the validation summary.
+- Advisory only, like T-049.24 and T-049.41: copy and download are not blocked, and no text is
+  changed. The toolbar is always visible beside the export buttons, so the count is the warning at
+  export time.
+- Known limit: a reviewer who keeps a body that starts with `TODO: review ` on purpose is flagged
+  too. The check cannot tell authored text from an unreviewed suggestion, and this was accepted.
+- No new dependency, storage key, or export change. `findEmptyCueBodies` is untouched.
+
+### Options considered
+
+| Approach | Fit | Decision |
+| --- | --- | --- |
+| Flag `TODO: review` as empty text | Reverses the asserted `verify-empty-cue-body-warning.js` decision and mislabels a suggestion as missing text | Reject |
+| Block copy/download while placeholders remain | Turns a review aid into a gate; a reviewer may legitimately keep a cue | Reject |
+| Per-cue label + toolbar count, reuse validation summary | Same pattern as T-049.24/T-049.41; one new detector; no export change | Selected |
+| Strip placeholders on import | Alters reviewer data silently | Reject |
+| Flag every machine-read cue (`OCR:`, `SPEECH:`) | Those are real text that still needs review; flagging them dilutes the signal and is a separate decision | Defer |
 
 ## T-049.56: whisper.cpp speech-to-WebVTT cue suggestions
 

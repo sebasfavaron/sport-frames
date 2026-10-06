@@ -386,6 +386,10 @@
     return new Set(cues.filter((cue) => typeof cue.text !== "string" || !cue.text.trim() || cue.text.trim() === "TODO").map((cue) => cue.id));
   }
 
+  function findUnreviewedSuggestionCues(cues) {
+    return new Set(cues.filter((cue) => typeof cue.text === "string" && cue.text.trim().startsWith("TODO: review ")).map((cue) => cue.id));
+  }
+
   function findFastReadingCues(cues) {
     return new Set(cues.filter((cue) => {
       const duration = cue.end - cue.start;
@@ -518,6 +522,7 @@
       [findCuesPastVideoEnd(cues, duration), "Extends past video end"],
       [findShortCues(cues), "Very short cue"],
       [findEmptyCueBodies(cues), "Needs annotation text"],
+      [findUnreviewedSuggestionCues(cues), "Unreviewed suggester placeholder"],
       [findFastReadingCues(cues), "High reading speed"],
       [findCueBodiesWithBlankLines(cues), "Blank line splits WebVTT cue"],
       [findCueGaps(cues).cueIds, "Gap before next cue"]
@@ -710,6 +715,7 @@
     const pastVideoEnd = findCuesPastVideoEnd(editorCues, video.duration);
     const shortCues = findShortCues(editorCues);
     const emptyCueBodies = findEmptyCueBodies(editorCues);
+    const unreviewedSuggestionCues = findUnreviewedSuggestionCues(editorCues);
     const fastReadingCues = findFastReadingCues(editorCues);
     const cueBodiesWithBlankLines = findCueBodiesWithBlankLines(editorCues);
     const cueGaps = findCueGaps(editorCues);
@@ -769,6 +775,13 @@
           const warning = document.createElement("strong");
           warning.className = "vtt-editor__empty-body-label";
           warning.textContent = "Needs annotation text";
+          summary.append(" ", warning);
+        }
+        if (unreviewedSuggestionCues.has(cue.id)) {
+          item.classList.add("has-unreviewed-suggestion");
+          const warning = document.createElement("strong");
+          warning.className = "vtt-editor__unreviewed-suggestion-label";
+          warning.textContent = "Unreviewed suggester placeholder";
           summary.append(" ", warning);
         }
         if (fastReadingCues.has(cue.id)) {
@@ -853,6 +866,11 @@
     emptyBodyWarning.textContent = emptyCueBodies.size === 1
       ? "Warning: 1 cue needs annotation text."
       : `Warning: ${emptyCueBodies.size} cues need annotation text.`;
+    const unreviewedSuggestionWarning = vttEditor.querySelector(".vtt-editor__unreviewed-suggestion-warning");
+    unreviewedSuggestionWarning.hidden = unreviewedSuggestionCues.size === 0;
+    unreviewedSuggestionWarning.textContent = unreviewedSuggestionCues.size === 1
+      ? "Warning: 1 cue still has an unreviewed suggester placeholder (TODO: review …)."
+      : `Warning: ${unreviewedSuggestionCues.size} cues still have unreviewed suggester placeholders (TODO: review …).`;
     const readingSpeedWarning = vttEditor.querySelector(".vtt-editor__reading-speed-warning");
     readingSpeedWarning.hidden = fastReadingCues.size === 0;
     readingSpeedWarning.textContent = fastReadingCues.size === 1
@@ -923,6 +941,7 @@
         <strong class="vtt-editor__duration-warning" role="status" hidden></strong>
         <strong class="vtt-editor__short-cue-warning" role="status" hidden></strong>
         <strong class="vtt-editor__empty-body-warning" role="status" hidden></strong>
+        <strong class="vtt-editor__unreviewed-suggestion-warning" role="status" hidden></strong>
         <strong class="vtt-editor__reading-speed-warning" role="status" hidden></strong>
         <strong class="vtt-editor__blank-line-warning" role="status" hidden></strong>
         <strong class="vtt-editor__gap-warning" role="status" hidden></strong>

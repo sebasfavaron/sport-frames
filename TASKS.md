@@ -16,6 +16,22 @@ Fields:
 
 ## Items
 
+### T-049.58 - Flag unreviewed suggester placeholders in the editor
+
+- status: `done`
+- goal: give a reviewer a review queue for the `TODO: review ...` cues the FFmpeg suggesters emit, so an export that still contains them is no longer silent, without reclassifying them as empty text
+- source: `T-049 standing criterion; worker-selected narrow slice 2026-10-06 — closing the gap T-049.57 found: placeholder cues were not flagged, and tools/verify-empty-cue-body-warning.js asserts that on purpose`
+- workspace: `/home/sebas/work/projects/sport-frames`
+- next_step:
+  - none for this slice. Open question for Sebas: whether an author who deliberately keeps a `TODO: review ` body should be able to dismiss the flag (see `docs/live-annotations.md` T-049.58 "Known limit")
+- notes:
+  - completed: the editor marks each cue whose body starts with `TODO: review ` as **Unreviewed suggester placeholder**, adds it to the validation summary, and the toolbar reports the count. Advisory only: copy and download are unchanged. `findEmptyCueBodies` and its verifier are untouched, so `TODO: review` still does not count as empty text
+  - the prefix is checked against the five emitters (scene cut, black, freeze, silence, loudpeak) by `tools/verify-t04958.js`, which reads their scripts. OCR (`OCR:`) and speech (`SPEECH:`) bodies are not flagged
+  - `tools/verify-t04946.js` lists the validation-summary dependencies by name, so the new function was added to its list. No assertion changed
+  - verified: `tools/verify-t04958.js` passes on this change and fails against HEAD's `script.js` and `style.css` (reverted in a scratch copy). No whisper model or heavy FFmpeg job was run; the speech verifier was run with a no-speech stub on this memory-tight Pi
+  - options considered, recorded in `docs/live-annotations.md` under T-049.58
+- tags: [project:sport-frames, type:suggester-placeholder-review-flag, criterion:live-annotations]
+
 ### T-049.57 - Drop zero-length speech segments before the editor import
 
 - status: `done`

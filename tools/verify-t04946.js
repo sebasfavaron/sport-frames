@@ -26,6 +26,7 @@ const dependencies = [
   "findCuesPastVideoEnd",
   "findShortCues",
   "findEmptyCueBodies",
+  "findUnreviewedSuggestionCues",
   "findFastReadingCues",
   "findCueBodiesWithBlankLines",
   "findCueGaps",

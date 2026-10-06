@@ -205,6 +205,10 @@ se exporta como prefijo de texto plano `Nombre: texto`), y la importación agreg
 como pista activa; SRT es sólo un formato de intercambio adicional. Los cues persisten sólo en
 `localStorage` de ese browser: no hay cuenta, backend, subida ni dependencia externa.
 
+Los cues que todavía dicen `TODO: review …` (placeholder de los sugeridores FFmpeg) se marcan
+**Unreviewed suggester placeholder** en su lista, y la barra del editor cuenta cuántos quedan. Es
+sólo un aviso: copiar y descargar siguen disponibles, y el texto de esos cues no se modifica.
+
 ## Desarrollo local
 
 No hay build step. Cualquier server estático sirve:
