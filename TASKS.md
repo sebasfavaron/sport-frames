@@ -16,6 +16,26 @@ Fields:
 
 ## Items
 
+### T-049.59 - Flag unreviewed machine-text cues, with a one-click accept
+
+- status: `done`
+- goal: flag every cue whose body carries unreviewed machine-made text (OCR/speech output,
+  prefixed `OCR: `/`SPEECH: ` by their emitters) so an export can't silently ship those prefixes,
+  and let a reviewer accept the recognized text in one click instead of hand-editing each cue
+- source: `T-049 standing criterion; worker-selected narrow slice 2026-10-07 — closing the gap T-049.58 noted: machine-transcribed bodies (OCR:/SPEECH:) were not flagged, only the generic TODO: review placeholder was`
+- workspace: `/home/sebas/work/projects/sport-frames`
+- next_step:
+  - none for this slice. Same open question as T-049.58 stands: whether an author who deliberately keeps a `TODO: review ` body should be able to dismiss that flag (not this one) is still Sebas's call
+- notes:
+  - completed: the editor marks each cue whose body starts with `OCR: ` or `SPEECH: ` as **Unreviewed machine text** (separate from T-049.58's **Unreviewed suggester placeholder**), adds it to the validation summary, and the toolbar reports the count. Advisory only: copy and download are unchanged
+  - new **Accept text** action appears only on flagged cues: `acceptMachineTextCue` strips exactly the matched prefix, keeps the recognized text verbatim, and leaves timing/position/voice/etc. untouched. The click handler calls `setDestructiveUndoSnapshot(editorCues)` first, the same choke point delete/duplicate/merge-next/clear-all use, so "Undo last cue change" restores the prefixed body
+  - the two prefixes are read from `tools/suggest-ocr-vtt.sh`/`tools/suggest-speech-vtt.sh` by `tools/verify-t04959.js`, which asserts script.js's `MACHINE_TEXT_PREFIXES` matches exactly what they print, not a hardcoded guess
+  - `tools/verify-t04946.js` lists the validation-summary dependencies by name, so `machineTextPrefix`/`findUnreviewedMachineTextCues` were added to its list and its vm context given `MACHINE_TEXT_PREFIXES`. No assertion changed
+  - T-049.58's `TODO: review ` flag and the lack of a dismiss action for it are untouched
+  - verified: `tools/verify-t04959.js` passes on this change and fails against HEAD's `script.js` (reverted in a scratch copy). No whisper model or heavy FFmpeg job was run
+  - options considered, recorded in `docs/live-annotations.md` under T-049.59
+- tags: [project:sport-frames, type:machine-text-review-accept, criterion:live-annotations]
+
 ### T-049.58 - Flag unreviewed suggester placeholders in the editor
 
 - status: `done`

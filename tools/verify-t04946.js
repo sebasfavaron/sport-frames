@@ -27,13 +27,15 @@ const dependencies = [
   "findShortCues",
   "findEmptyCueBodies",
   "findUnreviewedSuggestionCues",
+  "machineTextPrefix",
+  "findUnreviewedMachineTextCues",
   "findFastReadingCues",
   "findCueBodiesWithBlankLines",
   "findCueGaps",
   "findCueValidationIssues"
 ];
 
-const context = { SHORT_CUE_THRESHOLD_SECONDS: 0.15, NEAR_DUPLICATE_CUE_TOLERANCE_SECONDS: 0.1, MAX_CUE_CHARACTERS_PER_SECOND: 20, CUE_GAP_THRESHOLD_SECONDS: 1 };
+const context = { SHORT_CUE_THRESHOLD_SECONDS: 0.15, NEAR_DUPLICATE_CUE_TOLERANCE_SECONDS: 0.1, MAX_CUE_CHARACTERS_PER_SECOND: 20, CUE_GAP_THRESHOLD_SECONDS: 1, MACHINE_TEXT_PREFIXES: ["OCR: ", "SPEECH: "] };
 vm.createContext(context);
 vm.runInContext(
   `${dependencies.map(functionSource).join("\n")}\nthis.api={findCueValidationIssues};`,

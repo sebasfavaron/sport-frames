@@ -406,6 +406,7 @@ html, body {
 .vtt-editor__list li.is-short-cue,
 .vtt-editor__list li.has-empty-body,
 .vtt-editor__list li.has-unreviewed-suggestion,
+.vtt-editor__list li.has-unreviewed-machine-text,
 .vtt-editor__list li.is-fast-reading,
 .vtt-editor__list li.has-blank-line,
 .vtt-editor__list li.has-gap-after {
@@ -425,6 +426,8 @@ html, body {
 .vtt-editor__empty-body-label,
 .vtt-editor__unreviewed-suggestion-warning,
 .vtt-editor__unreviewed-suggestion-label,
+.vtt-editor__unreviewed-machine-text-warning,
+.vtt-editor__unreviewed-machine-text-label,
 .vtt-editor__reading-speed-warning,
 .vtt-editor__reading-speed-label,
 .vtt-editor__blank-line-warning,
@@ -437,6 +440,7 @@ html, body {
 .vtt-editor__short-cue-warning,
 .vtt-editor__empty-body-warning,
 .vtt-editor__unreviewed-suggestion-warning,
+.vtt-editor__unreviewed-machine-text-warning,
 .vtt-editor__reading-speed-warning,
 .vtt-editor__blank-line-warning,
 .vtt-editor__gap-warning { flex-basis: 100%; }
@@ -446,6 +450,7 @@ html, body {
 .vtt-editor__short-cue-label,
 .vtt-editor__empty-body-label,
 .vtt-editor__unreviewed-suggestion-label,
+.vtt-editor__unreviewed-machine-text-label,
 .vtt-editor__reading-speed-label,
 .vtt-editor__blank-line-label,
 .vtt-editor__gap-label { font-size: 0.72rem; }

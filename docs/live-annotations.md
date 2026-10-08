@@ -442,6 +442,48 @@ own signal.
 | Strip placeholders on import | Alters reviewer data silently | Reject |
 | Flag every machine-read cue (`OCR:`, `SPEECH:`) | Those are real text that still needs review; flagging them dilutes the signal and is a separate decision | Defer |
 
+## T-049.59: flag unreviewed machine-text cues, with a one-click accept
+
+### Decision
+
+Close the gap T-049.58 deferred: `tools/suggest-ocr-vtt.sh` and `tools/suggest-speech-vtt.sh`
+emit real cue text (`OCR: <text>`, `SPEECH: <text>`), not a generic placeholder, so T-049.58's
+`TODO: review ` check never flags them. Without a signal, an export could silently ship the
+`OCR:`/`SPEECH:` prefix in caption text that a reviewer never looked at.
+
+- The prefixes are read from the emitters, not assumed: `verify-t04959.js` extracts the literal
+  `OCR: `/`SPEECH: ` strings from `tools/suggest-ocr-vtt.sh`/`tools/suggest-speech-vtt.sh` and
+  asserts script.js's own `MACHINE_TEXT_PREFIXES` list matches exactly what they print.
+  `machineTextPrefix(text)` is the shared predicate (trims, then checks either prefix);
+  `findUnreviewedMachineTextCues(cues)` flags a cue whose body starts with one, same shape as
+  T-049.58's `findUnreviewedSuggestionCues`.
+- Each affected list item shows **Unreviewed machine text**, separate from T-049.58's
+  **Unreviewed suggester placeholder** (a `TODO: review ` body is never also flagged by this
+  check, and vice versa). The toolbar reports the count, and the cue appears in the validation
+  summary. Advisory only: copy and download are unchanged.
+- New per-cue **Accept text** action, shown only on flagged cues: `acceptMachineTextCue(cues, id)`
+  strips exactly the matched prefix, keeps the recognized text verbatim, and leaves every other
+  field (timing, position, voice, etc.) untouched; it returns `null` for a cue with no
+  machine-text prefix so the click handler can report a no-op instead of mutating. The click
+  handler calls `setDestructiveUndoSnapshot(editorCues)` immediately before applying it — the
+  same choke point delete/duplicate/merge-next/clear-all already use — so the existing one-shot
+  "Undo last cue change" restores the prefixed body.
+- T-049.58's `TODO: review ` flag is untouched, and no dismiss action was added for it: that open
+  question (whether an author who deliberately keeps a `TODO: review ` body should be able to
+  dismiss the flag) is still Sebas's to decide.
+- No new dependency, storage key, or export change. `buildVtt`/`buildSrt`/`saveEditorCues` persist
+  only the resulting cue `text`, same as any other edit; the flag itself is derived, not stored.
+
+### Options considered
+
+| Approach | Fit | Decision |
+| --- | --- | --- |
+| Per-cue label + toolbar count + validation summary entry, reusing T-049.58's pattern | Same proven shape; one new detector; no export change | Selected |
+| Flag `OCR:`/`SPEECH:` as part of T-049.58's existing check | Conflates two different signals (unreviewed placeholder vs. unreviewed machine transcription) under one label and one "fix" | Reject |
+| Accept action strips the prefix automatically on import | Alters reviewer data silently, same objection T-049.58 raised for its own placeholders | Reject |
+| No accept action, flag only | Leaves the reviewer to hand-edit every flagged cue to remove the prefix; a one-click action is low-risk and undoable | Reject (half of the ask) |
+| Auto-strip prefix and auto-clear flag without going through undo | Breaks the "every destructive/creation action is undoable" invariant the rest of the editor relies on | Reject |
+
 ## T-049.56: whisper.cpp speech-to-WebVTT cue suggestions
 
 ### Decision

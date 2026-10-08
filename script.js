@@ -390,6 +390,25 @@
     return new Set(cues.filter((cue) => typeof cue.text === "string" && cue.text.trim().startsWith("TODO: review ")).map((cue) => cue.id));
   }
 
+  const MACHINE_TEXT_PREFIXES = ["OCR: ", "SPEECH: "];
+
+  function machineTextPrefix(text) {
+    if (typeof text !== "string") return null;
+    const trimmed = text.trim();
+    return MACHINE_TEXT_PREFIXES.find((prefix) => trimmed.startsWith(prefix)) || null;
+  }
+
+  function findUnreviewedMachineTextCues(cues) {
+    return new Set(cues.filter((cue) => machineTextPrefix(cue.text)).map((cue) => cue.id));
+  }
+
+  function acceptMachineTextCue(cues, cueId) {
+    const cue = cues.find((item) => item.id === cueId);
+    const prefix = cue ? machineTextPrefix(cue.text) : null;
+    if (!prefix) return null;
+    return cues.map((item) => item.id === cueId ? { ...item, text: item.text.trim().slice(prefix.length) } : item);
+  }
+
   function findFastReadingCues(cues) {
     return new Set(cues.filter((cue) => {
       const duration = cue.end - cue.start;
@@ -523,6 +542,7 @@
       [findShortCues(cues), "Very short cue"],
       [findEmptyCueBodies(cues), "Needs annotation text"],
       [findUnreviewedSuggestionCues(cues), "Unreviewed suggester placeholder"],
+      [findUnreviewedMachineTextCues(cues), "Unreviewed machine text"],
       [findFastReadingCues(cues), "High reading speed"],
       [findCueBodiesWithBlankLines(cues), "Blank line splits WebVTT cue"],
       [findCueGaps(cues).cueIds, "Gap before next cue"]
@@ -716,6 +736,7 @@
     const shortCues = findShortCues(editorCues);
     const emptyCueBodies = findEmptyCueBodies(editorCues);
     const unreviewedSuggestionCues = findUnreviewedSuggestionCues(editorCues);
+    const unreviewedMachineTextCues = findUnreviewedMachineTextCues(editorCues);
     const fastReadingCues = findFastReadingCues(editorCues);
     const cueBodiesWithBlankLines = findCueBodiesWithBlankLines(editorCues);
     const cueGaps = findCueGaps(editorCues);
@@ -784,6 +805,13 @@
           warning.textContent = "Unreviewed suggester placeholder";
           summary.append(" ", warning);
         }
+        if (unreviewedMachineTextCues.has(cue.id)) {
+          item.classList.add("has-unreviewed-machine-text");
+          const warning = document.createElement("strong");
+          warning.className = "vtt-editor__unreviewed-machine-text-label";
+          warning.textContent = "Unreviewed machine text";
+          summary.append(" ", warning);
+        }
         if (fastReadingCues.has(cue.id)) {
           item.classList.add("is-fast-reading");
           const warning = document.createElement("strong");
@@ -815,7 +843,10 @@
           : "";
         const moveUpAction = cueIndex > 0 ? `<button type="button" data-action="move-up" aria-label="Move cue up in list">Move up</button>` : "";
         const moveDownAction = cueIndex < editorCues.length - 1 ? `<button type="button" data-action="move-down" aria-label="Move cue down in list">Move down</button>` : "";
-        actions.innerHTML = `<button type="button" data-action="go-to">Go to start</button><button type="button" data-action="split">Split at scrub time</button>${snapStartAction}${nextCueActions}<button type="button" data-action="duplicate">Duplicate</button>${moveUpAction}${moveDownAction}<button type="button" data-action="edit">Edit</button><button type="button" data-action="delete">Delete</button>`;
+        const acceptTextAction = unreviewedMachineTextCues.has(cue.id)
+          ? `<button type="button" data-action="accept-text">Accept text</button>`
+          : "";
+        actions.innerHTML = `<button type="button" data-action="go-to">Go to start</button><button type="button" data-action="split">Split at scrub time</button>${snapStartAction}${nextCueActions}<button type="button" data-action="duplicate">Duplicate</button>${moveUpAction}${moveDownAction}${acceptTextAction}<button type="button" data-action="edit">Edit</button><button type="button" data-action="delete">Delete</button>`;
         const cueDuration = cue.end - cue.start;
         const timelineEnd = Number.isFinite(video.duration) && video.duration > 0
           ? Math.max(0, video.duration - cueDuration)
@@ -871,6 +902,11 @@
     unreviewedSuggestionWarning.textContent = unreviewedSuggestionCues.size === 1
       ? "Warning: 1 cue still has an unreviewed suggester placeholder (TODO: review …)."
       : `Warning: ${unreviewedSuggestionCues.size} cues still have unreviewed suggester placeholders (TODO: review …).`;
+    const unreviewedMachineTextWarning = vttEditor.querySelector(".vtt-editor__unreviewed-machine-text-warning");
+    unreviewedMachineTextWarning.hidden = unreviewedMachineTextCues.size === 0;
+    unreviewedMachineTextWarning.textContent = unreviewedMachineTextCues.size === 1
+      ? "Warning: 1 cue still has unreviewed machine text (OCR:/SPEECH:)."
+      : `Warning: ${unreviewedMachineTextCues.size} cues still have unreviewed machine text (OCR:/SPEECH:).`;
     const readingSpeedWarning = vttEditor.querySelector(".vtt-editor__reading-speed-warning");
     readingSpeedWarning.hidden = fastReadingCues.size === 0;
     readingSpeedWarning.textContent = fastReadingCues.size === 1
@@ -942,6 +978,7 @@
         <strong class="vtt-editor__short-cue-warning" role="status" hidden></strong>
         <strong class="vtt-editor__empty-body-warning" role="status" hidden></strong>
         <strong class="vtt-editor__unreviewed-suggestion-warning" role="status" hidden></strong>
+        <strong class="vtt-editor__unreviewed-machine-text-warning" role="status" hidden></strong>
         <strong class="vtt-editor__reading-speed-warning" role="status" hidden></strong>
         <strong class="vtt-editor__blank-line-warning" role="status" hidden></strong>
         <strong class="vtt-editor__gap-warning" role="status" hidden></strong>
@@ -1295,6 +1332,21 @@
         updateVttAnnotation();
         saveEditorCues();
         setEditorStatus(`Split cue at ${vttTimestamp(time)}.`);
+        return;
+      }
+      if (button.dataset.action === "accept-text") {
+        const accepted = acceptMachineTextCue(editorCues, id);
+        if (!accepted) {
+          setEditorStatus("This cue has no unreviewed machine text to accept.");
+          return;
+        }
+        setDestructiveUndoSnapshot(editorCues);
+        editorCues = accepted;
+        if (editingCueId === id) resetEditorForm({ rollback: false });
+        renderEditorCues();
+        updateVttAnnotation();
+        saveEditorCues();
+        setEditorStatus("Accepted machine-transcribed text; prefix removed.");
         return;
       }
       startEditingCue(cue);
