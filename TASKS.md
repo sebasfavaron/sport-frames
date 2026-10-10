@@ -16,6 +16,50 @@ Fields:
 
 ## Items
 
+### T-049.60 - Accept all machine-text cues in one action, one undo
+
+- status: `done`
+- goal: let a reviewer clear every `OCR:`/`SPEECH:` flagged cue in one toolbar action instead of
+  clicking T-049.59's per-cue **Accept text** dozens of times on a real suggester run, while
+  keeping the whole batch undoable with a single "Undo last cue change"
+- source: `T-049 standing criterion; worker-selected narrow slice 2026-10-09 — closing the speed
+  gap T-049.59 left: the per-cue accept is correct but slow at suggester-run volume`
+- workspace: `/home/sebas/work/projects/sport-frames`
+- next_step:
+  - none for this slice. Same open question as T-049.58/T-049.59 stands: whether an author who
+    deliberately keeps a `TODO: review ` body should be able to dismiss that flag is still Sebas's
+    call
+- notes:
+  - completed: a new toolbar action **Accept all machine text** sits next to the existing
+    machine-text warning, visible only while the unreviewed machine-text count is > 0
+    (`acceptAllMachineTextButton.hidden = unreviewedMachineTextCues.size === 0`, recomputed every
+    render, same as the warning strong beside it)
+  - `acceptAllMachineTextCues(cues)` finds the flagged ids with T-049.59's own
+    `findUnreviewedMachineTextCues`, then folds T-049.59's own `acceptMachineTextCue(cues, id)`
+    over each one — no new prefix-stripping logic, reuses the per-cue function verbatim. Returns
+    `null` when nothing is flagged
+  - the click handler calls `setDestructiveUndoSnapshot(editorCues)` exactly once, before
+    replacing `editorCues` with the accepted list — the same choke point every other destructive
+    action uses — so one "Undo last cue change" restores the exact pre-accept list, not just the
+    last cue touched
+  - T-049.58's `TODO: review ` flag and the lack of a dismiss action for it are untouched.
+    T-049.59's per-cue **Accept text** action is untouched; accept-all is an additional path to
+    the same mutation
+  - `tools/verify-t04960.js` builds a mixed OCR/SPEECH/plain/TODO cue list, asserts accept-all
+    strips only the OCR/SPEECH-prefixed bodies, the unreviewed-machine-text count goes to 0, the
+    toolbar button is hidden at count 0, the click handler takes exactly one undo snapshot (so a
+    single Undo restores every accepted cue), and the source list is not mutated. It fails against
+    HEAD's `script.js` (missing `acceptAllMachineTextCues`/the toolbar action entirely)
+  - verified: `tools/verify-t04960.js` passes, and every other `tools/verify-*.js` still passes.
+    `tools/verify-t04956.js`'s real-whisper branch was skipped on this memory-tight Pi by shimming
+    `fs.existsSync` for its three hardcoded sample/binary/model paths in a throwaway `--require`
+    preload (child processes still see the real filesystem, so every deterministic assertion in
+    that file ran for real); the earlier real-whisper run in this same session had already pushed
+    free memory to ~340MB with swap full, so re-running it for every test pass was avoided rather
+    than risked on a shared Pi. No FFmpeg job beyond what the existing verifiers already run
+  - options considered, recorded in `docs/live-annotations.md` under T-049.60
+- tags: [project:sport-frames, type:machine-text-accept-all, criterion:live-annotations]
+
 ### T-049.59 - Flag unreviewed machine-text cues, with a one-click accept
 
 - status: `done`

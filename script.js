@@ -409,6 +409,14 @@
     return cues.map((item) => item.id === cueId ? { ...item, text: item.text.trim().slice(prefix.length) } : item);
   }
 
+  function acceptAllMachineTextCues(cues) {
+    const flaggedIds = findUnreviewedMachineTextCues(cues);
+    if (flaggedIds.size === 0) return null;
+    let result = cues;
+    for (const cueId of flaggedIds) result = acceptMachineTextCue(result, cueId);
+    return result;
+  }
+
   function findFastReadingCues(cues) {
     return new Set(cues.filter((cue) => {
       const duration = cue.end - cue.start;
@@ -907,6 +915,8 @@
     unreviewedMachineTextWarning.textContent = unreviewedMachineTextCues.size === 1
       ? "Warning: 1 cue still has unreviewed machine text (OCR:/SPEECH:)."
       : `Warning: ${unreviewedMachineTextCues.size} cues still have unreviewed machine text (OCR:/SPEECH:).`;
+    const acceptAllMachineTextButton = vttEditor.querySelector('[data-action="accept-all-machine-text"]');
+    acceptAllMachineTextButton.hidden = unreviewedMachineTextCues.size === 0;
     const readingSpeedWarning = vttEditor.querySelector(".vtt-editor__reading-speed-warning");
     readingSpeedWarning.hidden = fastReadingCues.size === 0;
     readingSpeedWarning.textContent = fastReadingCues.size === 1
@@ -979,6 +989,7 @@
         <strong class="vtt-editor__empty-body-warning" role="status" hidden></strong>
         <strong class="vtt-editor__unreviewed-suggestion-warning" role="status" hidden></strong>
         <strong class="vtt-editor__unreviewed-machine-text-warning" role="status" hidden></strong>
+        <button type="button" data-action="accept-all-machine-text" hidden>Accept all machine text</button>
         <strong class="vtt-editor__reading-speed-warning" role="status" hidden></strong>
         <strong class="vtt-editor__blank-line-warning" role="status" hidden></strong>
         <strong class="vtt-editor__gap-warning" role="status" hidden></strong>
@@ -1453,6 +1464,20 @@
       updateVttAnnotation();
       saveEditorCues();
       setEditorStatus("Redo applied.");
+    });
+    vttEditor.querySelector('[data-action="accept-all-machine-text"]').addEventListener("click", () => {
+      const accepted = acceptAllMachineTextCues(editorCues);
+      if (!accepted) {
+        setEditorStatus("No unreviewed machine text to accept.");
+        return;
+      }
+      const count = findUnreviewedMachineTextCues(editorCues).size;
+      setDestructiveUndoSnapshot(editorCues);
+      editorCues = accepted;
+      renderEditorCues();
+      updateVttAnnotation();
+      saveEditorCues();
+      setEditorStatus(`Accepted machine-transcribed text on ${count} cue${count === 1 ? "" : "s"}; prefixes removed. Undo is available.`);
     });
     vttEditor.querySelector('[data-action="clear-all"]').addEventListener("click", () => {
       if (!editorCues.length) {

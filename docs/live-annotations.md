@@ -410,6 +410,45 @@ changing the empty-text check.
 | Flag `TODO:`-prefixed suggestion bodies as needing review | Real value for the review loop, but reverses the existing `verify-empty-cue-body-warning.js` decision | Defer to Sebas (see above) |
 | Real-whisper check of this slice | Needs a model load on a Pi with 1.1 GiB free and swap full | Reject: the fake whisper-cli covers the code path |
 
+## T-049.60: accept all machine-text cues in one action, one undo
+
+### Decision
+
+Close the gap T-049.59 left open: its per-cue **Accept text** action is correct but a suggester
+run on a real clip produces dozens of `OCR:`/`SPEECH:` cues, and accepting them one at a time is
+the slow part of the review loop.
+
+- New toolbar action **Accept all machine text**, next to the toolbar's machine-text warning.
+  `acceptAllMachineTextCues(cues)` reuses T-049.59's `findUnreviewedMachineTextCues` to find the
+  flagged ids, then folds T-049.59's own `acceptMachineTextCue(cues, id)` over each one, so the
+  per-cue stripping logic (strip exactly the matched prefix, keep the recognized text verbatim,
+  leave every other field untouched) is not duplicated. Returns `null` when nothing is flagged, so
+  the click handler can report a no-op instead of mutating.
+- The button is hidden whenever the unreviewed machine-text count is 0, and shown otherwise
+  (`acceptAllMachineTextButton.hidden = unreviewedMachineTextCues.size === 0`, set on every
+  render) — no separate "enabled" state to track, same as the warning strong it sits beside.
+- The click handler takes **exactly one** `setDestructiveUndoSnapshot(editorCues)` call, before
+  replacing `editorCues` with the accepted list. One snapshot means one "Undo last cue change"
+  restores every cue the action touched, not just the last one — folding
+  `setDestructiveUndoSnapshot` into the per-cue loop instead would silently overwrite the undo
+  target on each iteration and only the last cue would be recoverable, which `verify-t04960.js`
+  asserts against by counting the snapshot calls inside the handler.
+- T-049.58's `TODO: review ` flag and the lack of a dismiss action for it are still untouched, and
+  T-049.59's per-cue **Accept text** action is untouched: accept-all is an additional path to the
+  same mutation, not a replacement for the single-cue one.
+- No new dependency, storage key, or export change: `buildVtt`/`saveEditorCues` are unaffected,
+  same as T-049.59.
+
+### Options considered
+
+| Approach | Fit | Decision |
+| --- | --- | --- |
+| One toolbar action, folding `acceptMachineTextCue` over every flagged id, one undo snapshot | Reuses the proven per-cue logic; one snapshot keeps the undo invariant for a multi-cue action | Selected |
+| One undo snapshot per cue (loop `setDestructiveUndoSnapshot` + `acceptMachineTextCue`) | Each snapshot overwrites the previous one; only the last cue would be undoable, defeating "one undo restores all of them" | Reject |
+| Always-visible button, disabled instead of hidden at count 0 | Same proven `hidden` pattern as every other toolbar warning/action in this editor; no reason to diverge | Reject |
+| Bulk-select cues then run "Accept text" on the selection | Reuses the existing bulk-select UI, but makes the reviewer select every flagged cue by hand first — the exact friction this slice removes | Reject |
+| Silently auto-accept on import, no action/undo | Alters reviewer data without an explicit action, same objection T-049.58/T-049.59 raised | Reject |
+
 ## T-049.58: flag unreviewed suggester placeholders in the editor
 
 ### Decision
