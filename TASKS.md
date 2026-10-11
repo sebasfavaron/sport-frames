@@ -16,6 +16,46 @@ Fields:
 
 ## Items
 
+### T-049.61 - Make verify-t04956's real-whisper check opt-in
+
+- status: `done`
+- goal: make verify-t04956's real-whisper check opt-in so the verify sweep is deterministic and
+  light on the shared Pi
+- source: `T-049 standing criterion; worker-selected narrow slice 2026-10-11 — the T-049.60
+  post-job verify of T-049.60 on 2026-10-10 failed only because suggest-speech-vtt.sh's real
+  whisper-cli run hit memory pressure ("failed to initialize whisper context", exit 3) with swap
+  full, while every deterministic assertion passed; that makes every tools/verify-*.js sweep
+  flaky and heavy on this Pi`
+- workspace: `/home/sebas/work/projects/sport-frames`
+- next_step: none for this slice
+- notes:
+  - completed: `tools/verify-t04956.js`'s real-transcription branch now only runs when
+    `SPORT_FRAMES_REAL_WHISPER=1` is set; otherwise it prints a one-line skip ("set
+    SPORT_FRAMES_REAL_WHISPER=1 to run it") and every deterministic (fake-whisper) assertion still
+    runs unconditionally. When opted in, a `suggest-speech-vtt.sh` exit `3` whose stderr contains
+    "failed to initialize whisper context" is now treated as an environment skip (printed, not
+    failed); any other non-zero exit still fails the assertion as before.
+    `tools/suggest-speech-vtt.sh` itself is unchanged
+  - `tools/verify-t04961.js` added: asserts `tools/verify-t04956.js`'s source still gates the real
+    branch on `SPORT_FRAMES_REAL_WHISPER !== "1"`, then spawns `node tools/verify-t04956.js` with
+    `SPORT_FRAMES_REAL_WHISPER`/`SPORT_FRAMES_WHISPER_CLI`/`SPORT_FRAMES_WHISPER_MODEL` all unset
+    and asserts it exits 0 and its stdout carries the opt-in skip line (so it never silently
+    spawns real whisper). The static check reads an overridable path
+    (`SPORT_FRAMES_T04961_TARGET`, defaulting to the real file) so the check itself can be proven
+    falsifiable without touching the real repo file: pointed at a `/tmp` copy of the pre-change
+    `tools/verify-t04956.js` (`git show HEAD:tools/verify-t04956.js`, no `git checkout`/`stash` on
+    the repo), it fails because that file never mentions `SPORT_FRAMES_REAL_WHISPER`; pointed at
+    the fixed file (no override), it passes
+  - `docs/live-annotations.md`'s T-049.56 section updated: notes the real-transcription check is
+    opt-in behind `SPORT_FRAMES_REAL_WHISPER=1`, and that an exit-`3` "failed to initialize"
+    result is skipped the same way as whisper not producing the known word. `README.md` does not
+    describe running `verify-t04956.js` directly, so it needed no change
+  - verified: every `tools/verify-*.js` (46 files, including the new `verify-t04961.js`) passes
+    with `SPORT_FRAMES_REAL_WHISPER` unset — no real whisper transcription ran at any point in
+    this job. `node --check` on both changed/added files, no FFmpeg job beyond what the existing
+    verifiers already run
+- tags: [project:sport-frames, type:verifier-heavy-opt-in, criterion:live-annotations]
+
 ### T-049.60 - Accept all machine-text cues in one action, one undo
 
 - status: `done`

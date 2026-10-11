@@ -576,10 +576,12 @@ How the suggester copes:
 - The `!!!!` output is removed by the letter/digit filter, so garbage never becomes a cue.
 - A load or inference failure (exit `3`) is a skip with a warning in `suggest-all-vtt.sh`.
 - `tools/verify-t04956.js` tests the wrapper deterministically with a fake whisper-cli (cue
-  filtering, exit `3` forwarding, paths). Its real-transcription check runs whisper-cli on the
-  known sample first. If whisper-cli itself does not produce the known word, that check is
-  skipped with a loud message rather than failing the gate, because it would then be testing
-  whisper's health, not this repo.
+  filtering, exit `3` forwarding, paths). Its real-transcription check is opt-in
+  (`SPORT_FRAMES_REAL_WHISPER=1`, see T-049.61) so the default verify sweep never runs real
+  whisper; run with that env var set to exercise it. When enabled, it runs whisper-cli on the
+  known sample first. If whisper-cli itself does not produce the known word, or fails to
+  initialize (exit `3`, memory pressure), that check is skipped with a loud message rather than
+  failing the gate, because it would then be testing whisper's health, not this repo.
 - `tools/verify-t04954.js`'s with-audio assertion now checks only the audio-stream suggesters
   (`quiet`, `loudpeak`) for skips. Speech is excluded there because its skip depends on whisper.
 
