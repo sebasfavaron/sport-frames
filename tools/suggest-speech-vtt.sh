@@ -67,6 +67,17 @@ if ! "$whisper_cli" -m "$whisper_model" -f "$wav" -t 3 -l "$lang" -ovtt -of "$wo
   >"$log" 2>&1; then
   echo "error: whisper-cli failed:" >&2
   cat "$log" >&2
+  check_script="$(dirname "$0")/check-whisper-model.sh"
+  if [[ -x "$check_script" ]]; then
+    set +e
+    "$check_script" "$whisper_model" >/dev/null 2>&1
+    check_status=$?
+    set -e
+    case "$check_status" in
+      0) echo "model checksum OK — likely memory pressure" >&2 ;;
+      4) echo "model checksum mismatch — re-download it" >&2 ;;
+    esac
+  fi
   exit 3
 fi
 [[ -f "$workdir/out.vtt" ]] || { echo "error: whisper-cli produced no output file" >&2; exit 3; }

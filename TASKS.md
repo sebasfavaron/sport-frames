@@ -16,6 +16,61 @@ Fields:
 
 ## Items
 
+### T-049.62 - Tell a corrupt whisper model apart from a runtime failure
+
+- status: `done`
+- goal: tell a corrupt whisper model apart from a runtime failure in the speech suggester
+- source: `T-049 standing criterion; worker-selected narrow slice 2026-10-13 — the model directory
+  (~/runtime/voice-system/models) is a symlink onto the external USB disk /mnt/rpi, which has a
+  record of silently corrupting files: this exact model's sha256 changed between reads after a
+  2026-09-30 USB fault and had to be deleted and re-downloaded (ledger f-046/rb-160), and the disk
+  has logged live ext4 corruption since 2026-10-12 (f-060); when whisper-cli then exits 3 with
+  "failed to initialize whisper context", nobody can tell a corrupt model from memory pressure`
+- workspace: `/home/sebas/work/projects/sport-frames`
+- next_step: none for this slice
+- notes:
+  - completed: `tools/check-whisper-model.sh MODEL` compares MODEL's sha256 against a hash pinned
+    in the script for `ggml-large-v3-turbo-q5_0.bin`. The pin
+    (`394221709cd5ad1f40c46e6031ca61bce88931e6e088c188294c6d5a55ffa7e2`) is the upstream Hugging
+    Face LFS `x-linked-etag` for that file, read via `curl -sI
+    https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-large-v3-turbo-q5_0.bin`
+    (confirmed against `x-linked-size`/`x-xet-hash` on the same response; the URL and command are
+    recorded in a comment in the script). Exits `0` on a match, `4` on mismatch with a one-line
+    message, `2` when the filename has no pinned hash (unknown/unpinned). The verdict's expensive
+    part — the file's own sha256 — is cached under `${XDG_CACHE_HOME:-~/.cache}/sport-frames/`,
+    keyed by the model's absolute path, size and mtime, so a repeat run against an unchanged file
+    does not re-hash the 574MB model. `SPORT_FRAMES_WHISPER_MODEL_PIN_SHA256` overrides the pin
+    for `ggml-large-v3-turbo-q5_0.bin`, for tests only
+  - `tools/suggest-speech-vtt.sh`: only when whisper-cli exits non-zero, it now also runs
+    `check-whisper-model.sh` against the model path (resolved relative to its own dirname) and
+    appends one line to stderr: "model checksum OK — likely memory pressure" on a match, "model
+    checksum mismatch — re-download it" on a mismatch; an unpinned/unknown filename appends
+    nothing. Exit codes and every other behaviour (including whisper-cli's own forwarded stderr)
+    are unchanged
+  - today's real model file (`~/runtime/voice-system/models/ggml-large-v3-turbo-q5_0.bin`, 574041195
+    bytes) was read once in this job to compute its sha256: it is
+    `394221709cd5ad1f40c46e6031ca61bce88931e6e088c188294c6d5a55ffa7e2`, matching the upstream pin —
+    today it is not corrupt
+  - `tools/verify-t04962.js` added: asserts match → exit 0, mismatch → exit 4 with a message,
+    unpinned filename → exit 2, that a second run against an unchanged (path+size+mtime) file
+    reuses the cached hash rather than re-hashing (proven by swapping the file's content for one
+    of the same size between runs and asserting the verdict still reflects the first read, with
+    exactly one cache entry both times), and that `suggest-speech-vtt.sh`'s failure message (fake
+    whisper-cli exits 3, same style as `verify-t04956.js`) carries the right verdict line for both
+    a matching and a mismatching model, with the original failure text and exit code 3 unchanged.
+    Both script paths are overridable via `SPORT_FRAMES_T04962_CHECK_SCRIPT`/
+    `SPORT_FRAMES_T04962_SUGGEST_SCRIPT` (default: the real shipped files) so the verify file's own
+    falsifiability could be proven without `git checkout`/`stash` on the repo: pointed at a
+    nonexistent `check-whisper-model.sh` it fails (script missing), pointed at a `/tmp` copy of
+    the pre-change `suggest-speech-vtt.sh` (`git show HEAD:tools/suggest-speech-vtt.sh` before
+    this slice's commit) it fails (no verdict line ever appears); pointed at the fixed files (no
+    override) it passes
+  - verified: every `tools/verify-*.js` (47 files, including the new `verify-t04962.js`) passes
+    with `SPORT_FRAMES_REAL_WHISPER` unset — no real whisper transcription ran at any point in
+    this job beyond the single sha256 read above. `bash -n`/`node --check` on all changed/added
+    files
+- tags: [project:sport-frames, type:whisper-model-integrity, criterion:live-annotations]
+
 ### T-049.61 - Make verify-t04956's real-whisper check opt-in
 
 - status: `done`
