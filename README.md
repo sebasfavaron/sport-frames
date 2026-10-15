@@ -158,7 +158,10 @@ tools/suggest-all-vtt.sh mi-jugada.mp4 > sugerencias.vtt
 
 Si dos detectores sugieren cues con inicio y fin casi idénticos (±0.1s), se quedan con uno solo y
 agregan `[also flagged by: NOMBRE]` al cuerpo del cue que sobrevive, para no revisar el mismo
-instante dos veces. Un detector cuyo stream (video o audio) falte en el archivo, o cuya
+instante dos veces. Cuando el detector descartado es `ocr` o `speech`, el texto reconocido se
+agrega también (`[also flagged by: ocr: TEXTO]`), para no perder el único contenido real que
+produce un detector en este archivo (los demás sólo emiten un `TODO: review …` genérico). Un
+detector cuyo stream (video o audio) falte en el archivo, o cuya
 herramienta externa no esté instalada (Tesseract, para `ocr`; whisper-cli y su modelo, para
 `speech`), se saltea con un aviso por stderr; si whisper-cli falla al transcribir en tiempo de
 ejecución (por ejemplo un modelo externo dañado) también se saltea con aviso en vez de abortar,

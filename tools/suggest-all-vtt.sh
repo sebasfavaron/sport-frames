@@ -15,7 +15,11 @@ then merges every suggested cue into one WebVTT on stdout: sorted by start
 time, and de-duplicated whenever two suggesters propose cues whose start and
 end each land within 0.1s of a cue already kept (the earlier suggester in the
 list above wins the kept identifier/body; the dropped suggester's name is
-appended to the surviving cue's body as "also flagged by: NAME").
+appended to the surviving cue's body as "also flagged by: NAME". When the
+dropped suggester is ocr or speech, its recognized text is appended too
+("also flagged by: ocr: TEXT"), so a real transcription/OCR read is never
+silently discarded just because a higher-priority suggester claimed the
+same moment first).
 
 A suggester whose required stream (video or audio) is missing from VIDEO, or
 whose required external tool (Tesseract, for suggest-ocr-vtt.sh; whisper-cli
@@ -111,6 +115,15 @@ awk -F'\t' '
     milliseconds %= 1000
     return sprintf("%02d:%02d:%02d.%03d", hours, minutes, secs, milliseconds)
   }
+  # ocr/speech are the only suggesters whose body is real recognized text
+  # (OCR: .../SPEECH: ...), not a generic TODO placeholder. Strip the known
+  # prefix so a dropped duplicate can carry that text into the kept cue
+  # instead of just naming the tag.
+  function machine_text_prefix(t) {
+    if (t == "ocr") return "OCR: "
+    if (t == "speech") return "SPEECH: "
+    return ""
+  }
   {
     n++
     tag[n] = $1
@@ -142,7 +155,12 @@ awk -F'\t' '
         }
       }
       if (dup) {
-        keptbody[dup] = keptbody[dup] " [also flagged by: " tag[idx] "]"
+        prefix = machine_text_prefix(tag[idx])
+        if (prefix != "" && substr(body[idx], 1, length(prefix)) == prefix) {
+          keptbody[dup] = keptbody[dup] " [also flagged by: " tag[idx] ": " substr(body[idx], length(prefix) + 1) "]"
+        } else {
+          keptbody[dup] = keptbody[dup] " [also flagged by: " tag[idx] "]"
+        }
       } else {
         kept++
         keptstart[kept] = startv[idx]

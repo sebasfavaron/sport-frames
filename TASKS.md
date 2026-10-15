@@ -16,6 +16,51 @@ Fields:
 
 ## Items
 
+### T-049.63 - Preserve OCR/speech recognized text when suggest-all-vtt.sh merges a duplicate cue
+
+- status: `done`
+- goal: stop `tools/suggest-all-vtt.sh`'s merge/de-dup step from discarding OCR/speech's actually
+  recognized text when a higher-priority suggester (scenecut/black/freeze/quiet/loudpeak) claims
+  the same moment first
+- source: `T-049 standing criterion; worker-selected narrow slice 2026-10-14 — walked the
+  generate → review → export loop with a fixture clip modeled on assets/default.mp4-style
+  footage (a scoreboard-text overlay landing on a scene cut) and found that suggest-all-vtt.sh
+  (T-049.54) already de-duplicates a cue in that situation, but only keeps the dropped
+  suggester's name ([also flagged by: ocr]), never its recognized text — the one piece of real
+  content any suggester in this project produces, since every other suggester only emits a
+  generic TODO: review placeholder`
+- workspace: `/home/sebas/work/projects/sport-frames`
+- next_step: none for this slice
+- notes:
+  - completed: `tools/suggest-all-vtt.sh`'s merge `awk` step now appends the dropped suggester's
+    recognized text when the dropped tag is `ocr` or `speech`: `[also flagged by: ocr: TEXT]`
+    (TEXT with the `OCR: `/`SPEECH: ` prefix stripped), instead of the bare
+    `[also flagged by: ocr]`. Every other tag (`scenecut`/`black`/`freeze`/`quiet`/`loudpeak`) is
+    unchanged, since those suggesters never produce real content — only `machine_text_prefix()`
+    and the one `dup` branch changed; usage text updated to describe it
+  - reproduced the loss before fixing it: a 2s fixture (`color=red` 1s, cut to `color=blue` 1s
+    with `drawtext` overlay "HOME 2 AWAY 1") makes `suggest-scenecut-vtt.sh` and
+    `suggest-ocr-vtt.sh` both fire at the same 1.000s candidate, so `suggest-all-vtt.sh` merged
+    them; before this slice the merged body was `TODO: review scene cut (score 0.448) [also
+    flagged by: ocr]` (OCR's "OCR: HOME 2 AWAY" text gone); after, it is `TODO: review scene cut
+    (score 0.448) [also flagged by: ocr: HOME 2 AWAY]`
+  - `docs/live-annotations.md` gained a T-049.63 section (Decision + options considered table,
+    same shape as every other T-049.x entry)
+  - `tools/verify-t04963.js` added: builds the same red/blue+drawtext fixture (plus a flat
+    no-cut/no-text control) under a real `ffmpeg`+`tesseract` run (no whisper involved), asserts
+    the merged scenecut cue's body contains the literal recognized OCR text after this slice's
+    fix, and proves falsifiability by copying the whole `tools/` dir to a `/tmp` dir and
+    overwriting only `suggest-all-vtt.sh` in that copy with `git show HEAD:tools/suggest-all-vtt.sh`
+    (the pre-change version, read before this slice's own commit — no `git checkout`/`stash` on
+    the real repo): run against that copy, the same assertion fails because the pre-change merge
+    only emits the bare `[also flagged by: ocr]`. Also asserts the unrelated
+    `[also flagged by: freeze]`/`[also flagged by: quiet]` tag-only format T-049.54's own
+    `verify-t04954.js` already pins is untouched
+  - verified: every `tools/verify-*.js` (48 files, including the new `verify-t04963.js`) passes
+    with `SPORT_FRAMES_REAL_WHISPER` unset — no real whisper transcription ran at any point in
+    this job. `bash -n`/`node --check` on all changed/added files
+- tags: [project:sport-frames, type:merge-dedup-keeps-ocr-speech-text, criterion:live-annotations]
+
 ### T-049.62 - Tell a corrupt whisper model apart from a runtime failure
 
 - status: `done`

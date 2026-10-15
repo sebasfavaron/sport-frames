@@ -770,3 +770,41 @@ Mark the cue whose end leaves an uncovered stretch longer than `CUE_GAP_THRESHOL
   and `saveEditorCues` are untouched.
 - No minimum-coverage enforcement, blocked export, backend, dependency, framework, upload,
   account, or persistence change.
+
+## T-049.63: preserve OCR/speech recognized text when `suggest-all-vtt.sh` merges a duplicate cue
+
+### Decision
+
+Fix a content-loss gap in T-049.54's merge step, found by walking the generate → review →
+export loop with `assets/default.mp4`-style footage: a scoreboard graphic or a spoken line very
+often lands within 0.1s of a scene cut, freeze, black interval, or loud peak at the same moment
+(a cut to a replay graphic, a goal call over a crowd roar). `suggest-all-vtt.sh` already
+de-duplicates that overlap in favor of the higher-priority suggester, but it only ever kept the
+dropped suggester's **name** (`[also flagged by: ocr]`) — never OCR's or speech's actual
+recognized text, even though that text is the one piece of real content any suggester in this
+file produces (every other suggester only emits a generic `TODO: review …` placeholder). Running
+`suggest-all-vtt.sh` on a clip where a scoreboard changes at a cut therefore silently threw away
+the one useful string a reviewer would have wanted to see.
+
+- When the dropped suggester's tag is `ocr` or `speech`, the kept cue's body now gets
+  `[also flagged by: ocr: TEXT]` (TEXT with the `OCR: `/`SPEECH: ` prefix stripped), instead of
+  the bare `[also flagged by: ocr]`. Every other tag (`scenecut`/`black`/`freeze`/`quiet`/
+  `loudpeak`) is unchanged: those suggesters never produce real content, so there is nothing to
+  preserve, and T-049.54's original `[also flagged by: NAME]` format stays exactly as it was for
+  them.
+- This only changes `suggest-all-vtt.sh`'s merge step. Neither per-signal suggester
+  (`suggest-ocr-vtt.sh`/`suggest-speech-vtt.sh`) changed, and the in-page editor's placeholder
+  (T-049.58) and machine-text (T-049.59) flags are unaffected: a merged cue whose body still
+  starts with `TODO: review ` is still flagged as an unreviewed placeholder exactly as before —
+  the appended OCR/speech text is supplementary context inside that same body, not a new field.
+- No new dependency, suggester, threshold, or detection signal: this closes a loss inside the
+  existing merge, it does not add a new one.
+
+### Options considered
+
+| Approach | Fit | Decision |
+| --- | --- | --- |
+| Append the dropped OCR/speech suggester's recognized text to the kept cue's body | Zero new signal/dependency; fixes real content loss in the existing merge step; leaves every other tag's format unchanged | Selected |
+| Always keep OCR/speech cues standalone (skip de-duplicating them against other suggesters) | Avoids the loss, but reintroduces near-duplicate review items T-049.54 explicitly set out to collapse | Reject |
+| Make OCR/speech outrank the FFmpeg signal suggesters in de-dup priority | Preserves the text without string surgery, but discards the other suggester's own classification (scene cut/black/freeze/etc.), which is also useful review context | Reject |
+| Flag merged-away OCR/speech text as a new warning type in the editor | The loss happens before the editor ever sees the cue; a warning cannot recover text the merge step already discarded | Reject |
