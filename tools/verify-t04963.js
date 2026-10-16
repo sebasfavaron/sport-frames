@@ -97,16 +97,17 @@ try {
   // Copy the whole tools/ dir to /tmp (suggest-all-vtt.sh shells out to its
   // sibling suggesters by its own BASH_SOURCE dirname, so they must resolve
   // next to it), then overwrite only suggest-all-vtt.sh with the version
-  // from HEAD, read before this slice's own commit. Never git
-  // checkout/stash on the real repo.
-  const preChangeContent = execFileSync("git", ["show", "HEAD:tools/suggest-all-vtt.sh"], {
+  // from 51f99af (cdad507's parent, i.e. T-049.63's own commit minus one):
+  // pinned to that commit, not HEAD, since HEAD already carries T-049.63's
+  // fix once this slice lands. Never git checkout/stash on the real repo.
+  const preChangeContent = execFileSync("git", ["show", "51f99af:tools/suggest-all-vtt.sh"], {
     cwd: repoRoot,
     encoding: "utf8",
   });
   assert.doesNotMatch(
     preChangeContent,
     /machine_text_prefix/,
-    "test setup: HEAD's suggest-all-vtt.sh must be the pre-T-049.63 version (run this check before committing this slice)",
+    "test setup: 51f99af's suggest-all-vtt.sh must be the pre-T-049.63 version",
   );
 
   const preChangeToolsDir = path.join(tmpDir, "pre-change-tools");

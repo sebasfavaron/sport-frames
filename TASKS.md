@@ -16,6 +16,34 @@ Fields:
 
 ## Items
 
+### T-049.64 - Make verify-t04963 read its pre-change baseline from a fixed commit
+
+- status: `done`
+- goal: make `tools/verify-t04963.js` read its pre-change baseline from a fixed commit, so it
+  passes after T-049.63 landed
+- source: `T-049 standing criterion; found 2026-10-15 — T-049.63 (commit cdad507) added
+  tools/verify-t04963.js's falsifiability check reading its pre-change
+  tools/suggest-all-vtt.sh with git show HEAD:tools/suggest-all-vtt.sh and asserting that
+  content does NOT contain machine_text_prefix. Once cdad507 itself was committed, HEAD already
+  carries the fix, so that setup assertion always throws and the validator exits 1 forever —
+  broken by construction, and since every future sport-frames job runs all tools/verify-*.js as
+  its verify gate, this one file turned every future verdict into FAIL`
+- workspace: `/home/sebas/work/projects/sport-frames`
+- next_step: none for this slice
+- notes:
+  - completed: `tools/verify-t04963.js` now reads its pre-change baseline with
+    `git show 51f99af:tools/suggest-all-vtt.sh` (51f99af is cdad507's parent, confirmed with
+    `git rev-parse cdad507^`) instead of `HEAD:tools/suggest-all-vtt.sh`; the `doesNotMatch`
+    setup assertion is kept (it is now a true invariant of the pinned baseline) and its message
+    updated to drop the stale "run this check before committing this slice" instruction. The
+    rest of the falsifiability check is unchanged: the pre-change copy must still fail the
+    behavior assertions and the current `tools/suggest-all-vtt.sh` must still pass
+  - checked every other `tools/verify-*.js` for the same `HEAD:tools` pattern
+    (`grep -n "HEAD:tools" tools/verify-*.js`): only `verify-t04963.js` had it
+  - verified: `node tools/verify-t04963.js` exits 0 on current HEAD; every `tools/verify-*.js`
+    exits 0 with `SPORT_FRAMES_REAL_WHISPER` unset
+- tags: [project:sport-frames, type:validator-fix, criterion:live-annotations]
+
 ### T-049.63 - Preserve OCR/speech recognized text when suggest-all-vtt.sh merges a duplicate cue
 
 - status: `done`
