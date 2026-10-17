@@ -189,6 +189,19 @@
     return text.replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&");
   }
 
+  // A native TextTrackCue's .text is the raw WebVTT payload: a <v name>
+  // wrapper (if any) still attached and plain text already entity-escaped
+  // (while inline <b>/<i>/<u> stay literal, per formatVttCueText/buildVtt).
+  // formatVttCueText expects the same already-decoded shape editorCues
+  // store, so native cues must be decoded first or escaping doubles up and
+  // any voice wrapper shows as literal markup in the live overlay.
+  function nativeCueText(rawText) {
+    const text = String(rawText || "");
+    const voiceMatch = /^<v(?:\.[^\s>]+)*(?:[ \t]+([^>]*))?>[ \t]?/.exec(text);
+    const body = voiceMatch ? text.slice(voiceMatch[0].length).replace(/<\/v>\s*$/, "") : text;
+    return unescapeVttCueText(body);
+  }
+
   function buildVtt() {
     const body = [...editorCues]
       .sort((a, b) => a.start - b.start || a.end - b.end || a.id - b.id)
@@ -1604,7 +1617,7 @@
   function updateVttAnnotation() {
     const activeCues = annotationTrack.track.activeCues;
     const previews = activeCues ? Array.from(activeCues, (cue) => ({
-      text: cue.text,
+      text: nativeCueText(cue.text),
       x: Number.isFinite(cue.position) ? cue.position : 50,
       y: typeof cue.line === "number" && !cue.snapToLines ? cue.line : 8,
       size: Number.isFinite(cue.size) ? cue.size : 60,

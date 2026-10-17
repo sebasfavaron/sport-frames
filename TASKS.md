@@ -16,6 +16,51 @@ Fields:
 
 ## Items
 
+### T-049.65 - Decode native track cue text before the live overlay re-escapes it
+
+- status: `done`
+- goal: fix the live annotation overlay (`updateVttAnnotation`) so it decodes a native
+  `<track>` cue's raw WebVTT payload before formatting it for display, so an applied/loaded
+  cue with a voice label or with `&`/`<`/`>` in its body renders correctly instead of showing
+  double-escaped entities and a literal `<v Name>` tag
+- source: `T-049 standing criterion; found 2026-10-16 walking the generate -> review -> export
+  loop end to end with assets/default.mp4 — author a cue with a speaker label (or any &/</>
+  character) in the in-page editor, click "Apply to video" (T-049.12), scroll to that moment:
+  the live overlay (updateVttAnnotation, reading the browser's native TextTrackCue.text) passed
+  the raw, still-escaped, still-<v>-wrapped WebVTT payload straight into formatVttCueText(),
+  which expects the same decoded/voice-stripped shape editorCues already store and escapes
+  again, so every such cue rendered as mangled text (e.g. a cue exported as
+  "<v Commentator>A &amp; B &lt; C" displayed literally as
+  "<v Commentator>A &amp;amp; B &amp;lt; C" once it was the active playback track)`
+- workspace: `/home/sebas/work/projects/sport-frames`
+- next_step: none for this slice
+- notes:
+  - completed: new `nativeCueText(rawText)` in `script.js` strips a leading `<v ...>`/trailing
+    `</v>` wrapper (reusing the same regex shape `parseVttCues` already uses on import) and
+    decodes `&amp;`/`&lt;`/`&gt;` via the existing `unescapeVttCueText`, recovering exactly the
+    plain-text-with-inline-`<b>/<i>/<u>` shape `editorCues` already store. `updateVttAnnotation`
+    now maps native `activeCues` through `text: nativeCueText(cue.text)` before the existing
+    `formatVttCueText()` call, instead of passing `cue.text` straight through. `editorCues`'
+    own live-preview path (which never carried a voice wrapper or escaped entities to begin
+    with) is untouched. No new dependency, warning, suggester, or persistence change — this is
+    a rendering-correctness fix for the existing native-track live preview, not a new feature
+  - verified 2026-10-16: `node --check script.js`; `node tools/verify-t04965.js` (extracts the
+    shipped `nativeCueText`/`formatVttCueText`/`unescapeVttCueText` verbatim and proves plain
+    text passes through unchanged, a voiced+entity-escaped native payload decodes to the exact
+    original authored text, inline `<b>` markup survives the decode, the fixed two-step
+    decode-then-format pipeline renders single-escaped text with no leaked `<v>` tag, and the
+    `updateVttAnnotation` call site is wired to `nativeCueText`); falsifiability proven two ways:
+    (1) inside the verifier, the pre-change `script.js` pinned to commit `b0bb3eb` (this slice's
+    starting HEAD, not a HEAD-relative read) is shown to lack `nativeCueText` and to pass
+    `cue.text` straight through, and running its old `formatVttCueText` directly on the same raw
+    native payload reproduces both the leaked `<v Commentator>` tag and the doubled `&amp;amp;`
+    escaping; (2) externally, copying `script.js` reverted to that same pinned commit into a
+    `/tmp` scratch dir (no `git checkout`/`stash` on the real repo) and running
+    `tools/verify-t04965.js` against it fails with `nativeCueText must exist`, confirming the
+    check only passes once the fix is actually present; every other `tools/verify-*.js` passes
+    with `SPORT_FRAMES_REAL_WHISPER` unset
+- tags: [project:sport-frames, type:native-track-preview-entity-decode, criterion:live-annotations]
+
 ### T-049.64 - Make verify-t04963 read its pre-change baseline from a fixed commit
 
 - status: `done`
