@@ -807,4 +807,47 @@ the one useful string a reviewer would have wanted to see.
 | Append the dropped OCR/speech suggester's recognized text to the kept cue's body | Zero new signal/dependency; fixes real content loss in the existing merge step; leaves every other tag's format unchanged | Selected |
 | Always keep OCR/speech cues standalone (skip de-duplicating them against other suggesters) | Avoids the loss, but reintroduces near-duplicate review items T-049.54 explicitly set out to collapse | Reject |
 | Make OCR/speech outrank the FFmpeg signal suggesters in de-dup priority | Preserves the text without string surgery, but discards the other suggester's own classification (scene cut/black/freeze/etc.), which is also useful review context | Reject |
+
+## T-049.66: one-click adopt the recognized text a merged-dup suggestion cue carries
+
+### Decision
+
+Close the gap T-049.63 left open: that slice made `suggest-all-vtt.sh` preserve a dropped
+OCR/speech suggester's recognized text inside a kept cue's body as
+`[also flagged by: ocr: TEXT]`, but nothing in the in-page editor did anything with it. The
+existing one-click **Accept text** action (T-049.59) only fires on a cue whose body *starts with*
+`OCR: `/`SPEECH: `; a merged-dup cue's body instead starts with `TODO: review …`, with the
+recognized text buried in a trailing bracket. Walking the loop with a fixture modeled on
+`assets/default.mp4` (a scoreboard overlay landing on a scene cut) confirmed it: the merged cue
+showed up correctly flagged as an unreviewed placeholder, but adopting the one real piece of
+content it carried still meant reading the bracket and retyping or copy-pasting `TEXT` into the
+body by hand, then deleting the `TODO: review …` prefix and the bracket itself — exactly the kind
+of manual copy/paste between the suggester output and the editor this criterion asks to close.
+
+- New `findMergedRecognizedTextCues(cues)` flags a cue whose body still starts with
+  `TODO: review ` **and** contains at least one `[also flagged by: ocr: …]`/
+  `[also flagged by: speech: …]` bracket. A plain `OCR: `/`SPEECH: `-prefixed cue (T-049.59's own
+  case) and a bare placeholder with no recognized text (T-049.58's case) are deliberately left
+  out, so this never overlaps either existing flag's meaning.
+- New per-cue **Use recognized text** action, shown only on flagged cues:
+  `acceptMergedRecognizedText(cues, id)` extracts every recognized-text bracket on that cue
+  (joining more than one with a newline) and replaces the whole body with just that text,
+  dropping the `TODO: review …` placeholder and every bracket — timing, position, voice, etc. are
+  untouched. The click handler calls `setDestructiveUndoSnapshot(editorCues)` first, the same
+  choke point every other destructive editor action uses, so "Undo last cue change" restores the
+  placeholder body.
+- Wired into the consolidated validation summary (T-049.46) as its own `"Recognized text
+  available"` label, alongside (not instead of) the existing `"Unreviewed suggester placeholder"`
+  label a merged-dup cue already carries, plus a dedicated toolbar notice and list-item styling
+  reusing the shared warning-badge CSS every other cue-level flag already uses.
+- No new dependency, suggester, signal, persistence format, or export change: this only teaches
+  the editor to consume text `suggest-all-vtt.sh` already produces.
+
+### Options considered
+
+| Approach | Fit | Decision |
+| --- | --- | --- |
+| New `findMergedRecognizedTextCues`/`acceptMergedRecognizedText` + dedicated per-cue action and validation label | Targets exactly the shape T-049.63 introduced; never overlaps T-049.58/T-049.59's existing flags; reuses the same undo choke point and warning-badge styling | Selected |
+| Extend T-049.59's `acceptMachineTextCue`/`findUnreviewedMachineTextCues` to also match the bracket shape | Fewer new functions, but conflates two different body shapes (prefix-stripping vs. whole-body replacement) under one name, and a merged-dup cue would wrongly disappear from "Unreviewed suggester placeholder" counts it should still satisfy until explicitly accepted | Reject |
+| Fold the extraction into `suggest-all-vtt.sh` itself (emit the recognized text as the cue's whole body, drop the `TODO: review …` wrapper on a text-bearing dup) | Removes the manual step entirely at generation time, but throws away the surviving suggester's own classification (scene cut/freeze/etc.) that the current bracket format still records for review, and reopens exactly the content-loss question T-049.63 just settled the other way | Reject |
 | Flag merged-away OCR/speech text as a new warning type in the editor | The loss happens before the editor ever sees the cue; a warning cannot recover text the merge step already discarded | Reject |

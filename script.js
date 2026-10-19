@@ -430,6 +430,31 @@
     return result;
   }
 
+  const MERGED_RECOGNIZED_TEXT_PATTERN = /\[also flagged by: (?:ocr|speech): [^\]]*\]/;
+  const MERGED_RECOGNIZED_TEXT_EXTRACT_PATTERN = /\[also flagged by: (?:ocr|speech): ([^\]]*)\]/g;
+
+  // suggest-all-vtt.sh's merge step (T-049.63) appends a dropped ocr/speech
+  // suggester's recognized text as "[also flagged by: ocr: TEXT]" onto a kept
+  // TODO: review placeholder cue's body. That text is the only real content
+  // signal those two suggesters produce; surfacing a one-click way to adopt
+  // it closes the gap where a human had to copy it out of the bracket by hand.
+  function findMergedRecognizedTextCues(cues) {
+    return new Set(cues.filter((cue) =>
+      typeof cue.text === "string" &&
+      cue.text.trim().startsWith("TODO: review ") &&
+      MERGED_RECOGNIZED_TEXT_PATTERN.test(cue.text)
+    ).map((cue) => cue.id));
+  }
+
+  function acceptMergedRecognizedText(cues, cueId) {
+    const cue = cues.find((item) => item.id === cueId);
+    if (!cue || typeof cue.text !== "string" || !cue.text.trim().startsWith("TODO: review ")) return null;
+    const matches = [...cue.text.matchAll(MERGED_RECOGNIZED_TEXT_EXTRACT_PATTERN)];
+    if (!matches.length) return null;
+    const recognizedText = matches.map((match) => match[1].trim()).join("\n");
+    return cues.map((item) => item.id === cueId ? { ...item, text: recognizedText } : item);
+  }
+
   function findFastReadingCues(cues) {
     return new Set(cues.filter((cue) => {
       const duration = cue.end - cue.start;
@@ -564,6 +589,7 @@
       [findEmptyCueBodies(cues), "Needs annotation text"],
       [findUnreviewedSuggestionCues(cues), "Unreviewed suggester placeholder"],
       [findUnreviewedMachineTextCues(cues), "Unreviewed machine text"],
+      [findMergedRecognizedTextCues(cues), "Recognized text available"],
       [findFastReadingCues(cues), "High reading speed"],
       [findCueBodiesWithBlankLines(cues), "Blank line splits WebVTT cue"],
       [findCueGaps(cues).cueIds, "Gap before next cue"]
@@ -758,6 +784,7 @@
     const emptyCueBodies = findEmptyCueBodies(editorCues);
     const unreviewedSuggestionCues = findUnreviewedSuggestionCues(editorCues);
     const unreviewedMachineTextCues = findUnreviewedMachineTextCues(editorCues);
+    const mergedRecognizedTextCues = findMergedRecognizedTextCues(editorCues);
     const fastReadingCues = findFastReadingCues(editorCues);
     const cueBodiesWithBlankLines = findCueBodiesWithBlankLines(editorCues);
     const cueGaps = findCueGaps(editorCues);
@@ -833,6 +860,13 @@
           warning.textContent = "Unreviewed machine text";
           summary.append(" ", warning);
         }
+        if (mergedRecognizedTextCues.has(cue.id)) {
+          item.classList.add("has-merged-recognized-text");
+          const warning = document.createElement("strong");
+          warning.className = "vtt-editor__merged-recognized-text-label";
+          warning.textContent = "Recognized text available";
+          summary.append(" ", warning);
+        }
         if (fastReadingCues.has(cue.id)) {
           item.classList.add("is-fast-reading");
           const warning = document.createElement("strong");
@@ -867,7 +901,10 @@
         const acceptTextAction = unreviewedMachineTextCues.has(cue.id)
           ? `<button type="button" data-action="accept-text">Accept text</button>`
           : "";
-        actions.innerHTML = `<button type="button" data-action="go-to">Go to start</button><button type="button" data-action="split">Split at scrub time</button>${snapStartAction}${nextCueActions}<button type="button" data-action="duplicate">Duplicate</button>${moveUpAction}${moveDownAction}${acceptTextAction}<button type="button" data-action="edit">Edit</button><button type="button" data-action="delete">Delete</button>`;
+        const acceptMergedTextAction = mergedRecognizedTextCues.has(cue.id)
+          ? `<button type="button" data-action="accept-merged-text">Use recognized text</button>`
+          : "";
+        actions.innerHTML = `<button type="button" data-action="go-to">Go to start</button><button type="button" data-action="split">Split at scrub time</button>${snapStartAction}${nextCueActions}<button type="button" data-action="duplicate">Duplicate</button>${moveUpAction}${moveDownAction}${acceptTextAction}${acceptMergedTextAction}<button type="button" data-action="edit">Edit</button><button type="button" data-action="delete">Delete</button>`;
         const cueDuration = cue.end - cue.start;
         const timelineEnd = Number.isFinite(video.duration) && video.duration > 0
           ? Math.max(0, video.duration - cueDuration)
@@ -930,6 +967,11 @@
       : `Warning: ${unreviewedMachineTextCues.size} cues still have unreviewed machine text (OCR:/SPEECH:).`;
     const acceptAllMachineTextButton = vttEditor.querySelector('[data-action="accept-all-machine-text"]');
     acceptAllMachineTextButton.hidden = unreviewedMachineTextCues.size === 0;
+    const mergedRecognizedTextWarning = vttEditor.querySelector(".vtt-editor__merged-recognized-text-warning");
+    mergedRecognizedTextWarning.hidden = mergedRecognizedTextCues.size === 0;
+    mergedRecognizedTextWarning.textContent = mergedRecognizedTextCues.size === 1
+      ? "Notice: 1 cue has recognized OCR/speech text available from a merged suggestion."
+      : `Notice: ${mergedRecognizedTextCues.size} cues have recognized OCR/speech text available from a merged suggestion.`;
     const readingSpeedWarning = vttEditor.querySelector(".vtt-editor__reading-speed-warning");
     readingSpeedWarning.hidden = fastReadingCues.size === 0;
     readingSpeedWarning.textContent = fastReadingCues.size === 1
@@ -1003,6 +1045,7 @@
         <strong class="vtt-editor__unreviewed-suggestion-warning" role="status" hidden></strong>
         <strong class="vtt-editor__unreviewed-machine-text-warning" role="status" hidden></strong>
         <button type="button" data-action="accept-all-machine-text" hidden>Accept all machine text</button>
+        <strong class="vtt-editor__merged-recognized-text-warning" role="status" hidden></strong>
         <strong class="vtt-editor__reading-speed-warning" role="status" hidden></strong>
         <strong class="vtt-editor__blank-line-warning" role="status" hidden></strong>
         <strong class="vtt-editor__gap-warning" role="status" hidden></strong>
@@ -1371,6 +1414,21 @@
         updateVttAnnotation();
         saveEditorCues();
         setEditorStatus("Accepted machine-transcribed text; prefix removed.");
+        return;
+      }
+      if (button.dataset.action === "accept-merged-text") {
+        const accepted = acceptMergedRecognizedText(editorCues, id);
+        if (!accepted) {
+          setEditorStatus("This cue has no recognized text from a merged suggestion to use.");
+          return;
+        }
+        setDestructiveUndoSnapshot(editorCues);
+        editorCues = accepted;
+        if (editingCueId === id) resetEditorForm({ rollback: false });
+        renderEditorCues();
+        updateVttAnnotation();
+        saveEditorCues();
+        setEditorStatus("Replaced placeholder with the merged suggestion's recognized text.");
         return;
       }
       startEditingCue(cue);

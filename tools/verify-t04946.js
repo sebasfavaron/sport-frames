@@ -29,13 +29,21 @@ const dependencies = [
   "findUnreviewedSuggestionCues",
   "machineTextPrefix",
   "findUnreviewedMachineTextCues",
+  "findMergedRecognizedTextCues",
   "findFastReadingCues",
   "findCueBodiesWithBlankLines",
   "findCueGaps",
   "findCueValidationIssues"
 ];
 
-const context = { SHORT_CUE_THRESHOLD_SECONDS: 0.15, NEAR_DUPLICATE_CUE_TOLERANCE_SECONDS: 0.1, MAX_CUE_CHARACTERS_PER_SECOND: 20, CUE_GAP_THRESHOLD_SECONDS: 1, MACHINE_TEXT_PREFIXES: ["OCR: ", "SPEECH: "] };
+const context = {
+  SHORT_CUE_THRESHOLD_SECONDS: 0.15,
+  NEAR_DUPLICATE_CUE_TOLERANCE_SECONDS: 0.1,
+  MAX_CUE_CHARACTERS_PER_SECOND: 20,
+  CUE_GAP_THRESHOLD_SECONDS: 1,
+  MACHINE_TEXT_PREFIXES: ["OCR: ", "SPEECH: "],
+  MERGED_RECOGNIZED_TEXT_PATTERN: /\[also flagged by: (?:ocr|speech): [^\]]*\]/
+};
 vm.createContext(context);
 vm.runInContext(
   `${dependencies.map(functionSource).join("\n")}\nthis.api={findCueValidationIssues};`,
@@ -79,6 +87,12 @@ assert.deepEqual(plainIssues(emptyBody, NaN)[0].labels, ["Needs annotation text"
 // High reading speed: many characters in a short duration.
 const fastReading = [cue(1, 0, 1, "x".repeat(40))];
 assert.deepEqual(plainIssues(fastReading, NaN)[0].labels, ["High reading speed"], "reading-speed label attached");
+
+// Recognized text available: a merged-dup TODO placeholder carries ocr/speech text.
+const mergedRecognizedText = [cue(1, 0, 5, "TODO: review scene cut (score 0.448) [also flagged by: ocr: HOME 2 AWAY]")];
+assert.deepEqual(plainIssues(mergedRecognizedText, NaN)[0].labels, ["Unreviewed suggester placeholder", "Recognized text available"], "merged-recognized-text label attached alongside the placeholder label");
+const plainOcrCue = [cue(1, 0, 2, "OCR: HOME 2 AWAY")];
+assert.deepEqual(plainIssues(plainOcrCue, NaN)[0].labels, ["Unreviewed machine text"], "a plain OCR-prefixed cue is not also flagged as merged-recognized-text");
 
 // Blank line splitting a cue body.
 const blankLine = [cue(1, 0, 2, "Line one\n\nLine two")];

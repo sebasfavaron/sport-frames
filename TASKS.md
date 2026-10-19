@@ -16,6 +16,61 @@ Fields:
 
 ## Items
 
+### T-049.66 - One-click adopt the recognized text a merged-dup suggestion cue carries
+
+- status: `done`
+- goal: add a one-click editor action that adopts the OCR/speech recognized text
+  `suggest-all-vtt.sh`'s merge step (T-049.63) appends to a kept `TODO: review …` cue as
+  `[also flagged by: ocr: TEXT]`, replacing the placeholder body with that text instead of
+  requiring the human to read the bracket and retype/copy it in by hand
+- source: `T-049 standing criterion; found 2026-10-18 walking the generate -> review -> export
+  loop with a fixture modeled on assets/default.mp4 (a scoreboard overlay landing on a scene
+  cut): T-049.63 made suggest-all-vtt.sh preserve the dropped OCR/speech suggester's recognized
+  text inside the kept cue's body instead of discarding it, but the editor's existing one-click
+  "Accept text" action (T-049.59) only matches a cue whose body starts with OCR:/SPEECH: —
+  a merged-dup cue's body instead starts with "TODO: review …", with the recognized text buried
+  in a trailing bracket, so adopting it still meant a manual copy/paste inside the editor itself`
+- workspace: `/home/sebas/work/projects/sport-frames`
+- next_step: none for this slice
+- notes:
+  - completed: new `findMergedRecognizedTextCues(cues)` in `script.js` flags a cue whose body
+    starts with `TODO: review ` and contains at least one `[also flagged by: ocr: …]`/
+    `[also flagged by: speech: …]` bracket (deliberately excluding both T-049.58's bare
+    placeholder and T-049.59's plain `OCR: `/`SPEECH: `-prefixed shape, so none of the three
+    flags overlap). New `acceptMergedRecognizedText(cues, cueId)` extracts every recognized-text
+    bracket on that cue (joining more than one with `\n`) and replaces the whole body with just
+    that text, dropping the placeholder and every bracket; timing/position/voice/etc. untouched.
+    New per-cue **Use recognized text** button appears only on flagged cues, wired through the
+    same `setDestructiveUndoSnapshot` choke point every other destructive editor action uses, so
+    "Undo last cue change" restores the placeholder body. Wired into T-049.46's consolidated
+    validation summary as its own `"Recognized text available"` label (alongside, not instead of,
+    the existing `"Unreviewed suggester placeholder"` label), plus a dedicated toolbar notice and
+    list-item styling reusing the shared warning-badge CSS. `docs/live-annotations.md` gained a
+    T-049.66 section (Decision + Options considered table, same shape as every other T-049.x
+    entry). No new dependency, suggester, signal, persistence format, or export change
+  - updated `tools/verify-t04946.js` (T-049.46's validation-summary harness): added
+    `findMergedRecognizedTextCues` to its vm-context dependency list and `MERGED_RECOGNIZED_TEXT_PATTERN`
+    to its context object (same pattern `MACHINE_TEXT_PREFIXES` already uses there), since
+    `findCueValidationIssues` now calls the new function; added a case proving the new label
+    attaches alongside "Unreviewed suggester placeholder" and that a plain OCR-prefixed cue is
+    not also flagged by this new check
+  - `tools/verify-t04966.js` added: extracts the shipped `findMergedRecognizedTextCues`/
+    `acceptMergedRecognizedText` verbatim and proves their behavior (what is/isn't flagged, body
+    replacement, multi-bracket join, untouched timing/position, null on no match), proves the
+    editor is actually wired (badge class, action button, click handler calling
+    `acceptMergedRecognizedText`+`setDestructiveUndoSnapshot`+re-render+persist, validation
+    summary label, CSS), and proves export/persistence (`buildVtt`/`saveEditorCues`) are
+    untouched; falsifiability proven by pinning the pre-change baseline to the fixed commit
+    `3ae8ca44189fd8a1312b9d64faf63cfd656efd08` (this slice's starting HEAD, not a HEAD-relative
+    read — the exact trap T-049.64 fixed for verify-t04963.js), writing that commit's `script.js`
+    to a `/tmp` scratch file (no `git checkout`/`stash` on the real repo), and proving the
+    verifier's own extraction throws on that copy because the function does not exist yet
+  - verified 2026-10-18: `node --check script.js`, `node --check tools/verify-t04946.js`,
+    `node --check tools/verify-t04966.js`; `git diff --check`; every `tools/verify-*.js` (50
+    files, including the new `verify-t04966.js`) passes with `SPORT_FRAMES_REAL_WHISPER` unset —
+    no real whisper transcription or OCR ran on any video in this job
+- tags: [project:sport-frames, type:accept-merged-dup-recognized-text, criterion:live-annotations]
+
 ### T-049.65 - Decode native track cue text before the live overlay re-escapes it
 
 - status: `done`
