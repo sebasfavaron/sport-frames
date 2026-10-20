@@ -88,6 +88,12 @@ for time in "${timestamps[@]}"; do
   # sequence so OCR noise can never break the emitted cue block.
   text=$(printf '%s' "$text" | sed -e 's/^ *//' -e 's/ *$//')
   text=${text//-->/->}
+  # Escape the same three reserved WebVTT cue-payload characters the in-page
+  # editor's escapeVttCueText() escapes for authored text (& first, so the
+  # entities < and > insert do not get re-escaped themselves).
+  text=${text//&/&amp;}
+  text=${text//</\&lt;}
+  text=${text//>/\&gt;}
   [[ -n "$text" ]] || continue
 
   count=$((count + 1))

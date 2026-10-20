@@ -102,6 +102,12 @@ awk '
     # start, silently; drop them here (as black/freeze do) so the count is honest.
     split(timing, bounds, / --> /)
     if (to_seconds(bounds[2]) <= to_seconds(bounds[1])) { return }
+    # Escape the same three reserved WebVTT cue-payload characters the
+    # editor escapeVttCueText() escapes for authored text (& first, so the
+    # entities &lt;/&gt; inserted below do not get re-escaped).
+    gsub(/&/, "\\&amp;", text)
+    gsub(/</, "\\&lt;", text)
+    gsub(/>/, "\\&gt;", text)
     n++
     print "speech-" n
     print timing

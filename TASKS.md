@@ -16,6 +16,66 @@ Fields:
 
 ## Items
 
+### T-049.67 - Escape reserved WebVTT characters in OCR/speech recognized text
+
+- status: `done`
+- goal: make `tools/suggest-ocr-vtt.sh` and `tools/suggest-speech-vtt.sh` escape `&`/`<`/`>` in
+  the real recognized text they emit as a cue body, matching the exact escaping contract the
+  in-page editor's `escapeVttCueText()` (T-049.26) already enforces for authored/edited cue text,
+  so a sponsor board, team name, or spoken phrase containing one of those three characters no
+  longer produces a `.vtt` file that is not valid WebVTT
+- source: `T-049 standing criterion; found 2026-10-20 walking the generate -> review -> export
+  loop with assets/default.mp4 and the full tools/suggest-*-vtt.sh set: every suggester whose
+  body is real machine-recognized text (OCR's suggest-ocr-vtt.sh, speech's
+  suggest-speech-vtt.sh) emitted it raw, while the editor has escaped & then < then > on every
+  export since T-049.26 — a real-world recognized string containing one of those three
+  characters (a sponsor board like "AT&T", a team name like "H&M", a scoreboard "A < B") produced
+  invalid WebVTT that the editor's own Import .vtt path happened to tolerate (its
+  unescapeVttCueText is a no-op on bare unescaped text) but that corrupted the suggester's
+  stand-alone output on the one path this file has pointed suggester users at since T-049.6: a
+  suggestion .vtt loaded straight into the native playback <track> through the existing local
+  file chooser (T-049.5), bypassing the editor entirely`
+- workspace: `/home/sebas/work/projects/sport-frames`
+- next_step: none for this slice
+- notes:
+  - completed: `tools/suggest-ocr-vtt.sh` escapes its recognized OCR text with bash parameter
+    substitution (`&` first, then `<`, then `>` — bash's `${var//pattern/replacement}` treats an
+    unescaped `&` in the replacement as "insert the match", same as sed, so `<`/`>` replacements
+    use `\&lt;`/`\&gt;`), right after its existing `-->`-to-`->` cue-terminator guard.
+    `tools/suggest-speech-vtt.sh` escapes its transcribed text with the equivalent `gsub()` calls
+    inside its existing `print_cue()` awk function (awk's `gsub` replacement string needs the same
+    `\&` escaping for a literal ampersand), right after its existing silence/zero-length segment
+    filters. Both use the identical order `script.js`'s `escapeVttCueText()` uses, so the three
+    characters never double-escape. Every other suggester (scenecut/black/freeze/silence/
+    loudpeak) is unchanged: their body is always the fixed `TODO: review ...` placeholder, which
+    never contains a reserved character. `tools/suggest-all-vtt.sh`'s merge step needed no code
+    change: it only copies the body substring it is handed, so the already-escaped text now
+    flows through its own cue body and its `[also flagged by: ocr: TEXT]`/`[also flagged by:
+    speech: TEXT]` bracket (T-049.63) untouched. `docs/live-annotations.md` gained a T-049.67
+    section (Decision + Options considered table, same shape as every other T-049.x entry)
+  - `tools/verify-t04967.js` added: extracts the shipped `escapeVttCueText`/`unescapeVttCueText`/
+    `parseVttCues` from `script.js` verbatim as ground truth; runs the real
+    `suggest-ocr-vtt.sh`/`suggest-speech-vtt.sh` against small ffmpeg fixtures with a fake
+    `tesseract` on `PATH` and a fake `whisper-cli` (via `SPORT_FRAMES_WHISPER_CLI`/
+    `SPORT_FRAMES_WHISPER_MODEL`, the same determinism rationale T-049.56/.57 already used) that
+    both return a fixed string containing `&`/`<`/`>`; asserts the emitted cue body is the exact
+    escaped string and never the raw one; asserts the editor's own `parseVttCues` decodes that
+    escaped output back to the exact original recognized text (closing the loop: generate ->
+    editor import); asserts `suggest-all-vtt.sh`'s merge step carries the already-escaped text
+    through a folded duplicate cue byte-for-byte; falsifiability proven by pinning the pre-change
+    baseline to the fixed commit `83a2e8d` (this slice's starting HEAD, T-049.66's own commit,
+    not a HEAD-relative read — the exact trap T-049.64 fixed for verify-t04963.js), reading both
+    suggester scripts from that commit with `git show` into a `/tmp` scratch copy of `tools/`
+    (never `git checkout`/`stash` on the real repo), and proving that pre-change copy still emits
+    the raw, unescaped text against the identical fixtures/fakes
+  - verified 2026-10-20: `bash -n tools/suggest-ocr-vtt.sh`, `bash -n
+    tools/suggest-speech-vtt.sh`, `node --check script.js`, `node --check
+    tools/verify-t04967.js`; every `tools/verify-*.js` (51 files, including the new
+    `verify-t04967.js`) passes with `SPORT_FRAMES_REAL_WHISPER` unset — no real whisper
+    transcription or OCR ran on any video longer than the small synthetic fixtures this job's
+    own verify scripts create
+- tags: [project:sport-frames, type:escape-suggester-recognized-text, criterion:live-annotations]
+
 ### T-049.66 - One-click adopt the recognized text a merged-dup suggestion cue carries
 
 - status: `done`

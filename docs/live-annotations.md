@@ -808,6 +808,53 @@ the one useful string a reviewer would have wanted to see.
 | Always keep OCR/speech cues standalone (skip de-duplicating them against other suggesters) | Avoids the loss, but reintroduces near-duplicate review items T-049.54 explicitly set out to collapse | Reject |
 | Make OCR/speech outrank the FFmpeg signal suggesters in de-dup priority | Preserves the text without string surgery, but discards the other suggester's own classification (scene cut/black/freeze/etc.), which is also useful review context | Reject |
 
+## T-049.67: escape reserved WebVTT characters in OCR/speech recognized text
+
+### Decision
+
+Give `suggest-ocr-vtt.sh`/`suggest-speech-vtt.sh` the same reserved-character escaping contract
+the in-page editor's own `escapeVttCueText()` (T-049.26) already enforces for authored/edited cue
+text, closing an asymmetry found walking the generate -> review -> export loop: the editor
+escapes `&`/`<`/`>` on every export, but the two suggesters whose body is real machine-recognized
+text (OCR's scoreboard/caption reads, speech's transcript) emitted it raw. A sponsor board, team
+name, or spoken phrase containing one of those three characters (`AT&T`, `H&M`, `A < B`) produced
+a `.vtt` file that was not valid WebVTT, and corrupted the live overlay specifically on the path
+that bypasses the editor entirely: loading a suggester's `.vtt` straight into the native `<track>`
+through the existing local file chooser (T-049.5), a workflow this file has pointed suggester
+users at since T-049.6. A reviewer opening that same file through the editor (T-049.10) was not
+exposed to the bug after this slice closes it, but would have been before: the raw unescaped text
+would have round-tripped unpredictably through `parseVttCues`/`unescapeVttCueText`'s assumption
+that the WebVTT it imports is already correctly escaped.
+
+- Both suggesters escape their recognized text the moment it is produced, in the exact order
+  `escapeVttCueText()` uses (`&` first, so the `&lt;`/`&gt;` entities inserted next are not
+  re-escaped themselves): `suggest-ocr-vtt.sh` with bash parameter substitution, after its
+  existing `-->`-to-`->` cue-terminator guard; `suggest-speech-vtt.sh` with the equivalent `gsub()`
+  calls inside its existing `print_cue()` awk function, after its existing silence/zero-length
+  filters. Every other suggester (`scenecut`/`black`/`freeze`/`quiet`/`loudpeak`) is untouched:
+  their body is always the fixed, already-safe `TODO: review ...` placeholder, so there is nothing
+  to escape.
+- `suggest-all-vtt.sh`'s merge step (T-049.54/.63) needed no change: it only copies the per-cue
+  body substring it is handed, so a kept cue's own text and a folded-in `[also flagged by: ocr:
+  TEXT]`/`[also flagged by: speech: TEXT]` bracket now carry the already-escaped text through
+  untouched.
+- The editor's T-049.59 **Accept text** / T-049.66 **Use recognized text** actions, and every
+  other editor path, are unaffected: `parseVttCues`'s existing `unescapeVttCueText()` call already
+  decodes the now-correctly-escaped suggester output back to the exact original recognized text on
+  import, and `buildVtt`/`buildSrt` already re-escape whatever a reviewer edits on export, the same
+  as before this slice.
+- No new dependency, suggester, signal, persistence format, editor change, or export change: this
+  closes a validity gap in two suggesters' existing output, it does not add a new one.
+
+### Options considered
+
+| Approach | Fit | Decision |
+| --- | --- | --- |
+| Escape `&`/`<`/`>` in the recognized text inside `suggest-ocr-vtt.sh`/`suggest-speech-vtt.sh`, matching `escapeVttCueText()`'s exact rule/order | Fixes the output at its source for every consumption path (native `<track>`, editor import, merge); zero new dependency | Selected |
+| Escape only inside `suggest-all-vtt.sh`'s merge step | Leaves the per-signal suggester's own stand-alone `.vtt` output (T-049.5's local-import path) broken whenever `suggest-all-vtt.sh` is not used | Reject |
+| Make the editor's `parseVttCues` tolerant of unescaped input instead | Treats a symptom at the one path that already works today (the editor decodes raw text as a no-op, which happens to be correct); does not fix the native `<track>` direct-load path, the actual broken consumer | Reject |
+| Leave it to manual post-generation review | The suggester's own stated contract ("review ... before use") does not mention re-checking punctuation validity, and a reviewer has no way to notice a native-track rendering glitch caused by a single stray `&`/`<`/`>` | Reject |
+
 ## T-049.66: one-click adopt the recognized text a merged-dup suggestion cue carries
 
 ### Decision
