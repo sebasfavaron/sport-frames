@@ -16,6 +16,21 @@ Fields:
 
 ## Items
 
+### T-049.68 - Make verify-t04956 hermetic off the Pi
+
+- status: `done`
+- goal: the deterministic checks in `tools/verify-t04956.js` pass on any machine with
+  ffmpeg, not only on the Pi where whisper-cli and the model sit at the default paths
+- source: `nightly node drain 2026-10-24, cloud session: verify-t04956 (and verify-t04961,
+  which runs it) failed with exit 127 instead of 1 on the no-audio case, because the script
+  checks whisper-cli/model before the audio stream and the test passed no fake`
+- workspace: `/home/sebas/work/projects/sport-frames`
+- next_step: none for this slice
+- notes:
+  - the no-audio and missing-model cases now pass the existing fake whisper (and fake model)
+  - `verify-t04955.js` and `verify-t04963.js` still need `tesseract`; not changed
+- tags: [project:sport-frames, type:test-hermeticity, criterion:live-annotations]
+
 ### T-049.67 - Escape reserved WebVTT characters in OCR/speech recognized text
 
 - status: `done`

@@ -86,7 +86,11 @@ try {
   ]);
 
   {
-    const result = run([noAudioVideo]);
+    // The fakes satisfy the tool checks, so the audio check is reached off the Pi too.
+    const result = run([noAudioVideo], {
+      SPORT_FRAMES_WHISPER_CLI: fakeWhisper,
+      SPORT_FRAMES_WHISPER_MODEL: fakeModel,
+    });
     assert.equal(result.status, 1, "a video with no audio stream exits 1");
     assert.match(result.stderr, /no audio stream/, "the missing-audio-stream error names the problem");
   }
@@ -97,7 +101,10 @@ try {
     assert.match(result.stderr, /whisper-cli not found/, "the error names the missing whisper-cli binary");
   }
   {
-    const result = run([noAudioVideo], { SPORT_FRAMES_WHISPER_MODEL: "/tmp/sport-frames-no-such-model.bin" });
+    const result = run([noAudioVideo], {
+      SPORT_FRAMES_WHISPER_CLI: fakeWhisper,
+      SPORT_FRAMES_WHISPER_MODEL: "/tmp/sport-frames-no-such-model.bin",
+    });
     assert.equal(result.status, 127, "a missing whisper model exits 127");
     assert.match(result.stderr, /whisper model not found/, "the error names the missing whisper model");
   }
