@@ -539,6 +539,19 @@ html, body {
 }
 
 @media (max-width: 700px) {
+  /* Phone: the editor is a bottom sheet that stops under a 16:9 frame, and the frame moves
+     to the top while the editor is open, so the frame being annotated stays visible. */
+  .vtt-editor {
+    top: auto;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    width: auto;
+    max-height: calc(100vh - 56.25vw - 1rem);
+    border-radius: 8px 8px 0 0;
+  }
+  body:has(.vtt-editor:not([hidden])) #scrolly-video { object-position: center top; }
+
   .scrolly__caption {
     max-width: 80%;
     left: 50% !important;
