@@ -16,6 +16,26 @@ Fields:
 
 ## Items
 
+### T-049.70 - On a phone the open WebVTT editor no longer covers the video
+
+- status: `done`
+- goal: on a phone the frame being annotated stays visible while the editor is open
+- source: `node drain 2026-10-26 06:39 UTC, cloud session: real-browser run at 390x844`
+- workspace: `/home/sebas/work/projects/sport-frames`
+- next_step: none for this slice
+- notes:
+  - bug: the editor is `position: fixed` at the top right, `width: min(30rem, 100vw - 2rem)`,
+    `max-height: 100vh - 2rem`. At 390px wide it covered the whole stage, so the frame the user
+    marks in/out on was hidden behind the form
+  - fix (CSS only, `max-width: 700px`): the editor becomes a bottom sheet with
+    `max-height: 100vh - 56.25vw - 1rem` (the space under a 16:9 frame), and while it is open
+    the picture sits at the top of the stage (`object-position: center top`, via `:has()`).
+    Desktop is unchanged
+  - verified: `tools/verify-t04970.js` (new, Playwright, 390x844) passes, and fails on the
+    pre-fix `style.css` (editor top 16px vs frame bottom 532px); `verify-t04969` still passes.
+    Evidence: `docs/evidence/t04970-phone-editor.png`
+- tags: [project:sport-frames, type:ui-bugfix, criterion:live-annotations]
+
 ### T-049.69 - Make loading a .vtt (page input and "Apply to video") actually show cues
 
 - status: `done`
