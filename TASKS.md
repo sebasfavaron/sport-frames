@@ -16,6 +16,28 @@ Fields:
 
 ## Items
 
+### T-049.69 - Make loading a .vtt (page input and "Apply to video") actually show cues
+
+- status: `done`
+- goal: the main user flow (load video -> load/author cues -> Apply -> export) works in a real
+  browser, not only in the unit-level verify scripts
+- source: `nightly node drain 2026-10-26, cloud session: first end-to-end Playwright/Chromium
+  run of the main flow`
+- workspace: `/home/sebas/work/projects/sport-frames`
+- next_step: none for this slice
+- notes:
+  - bug 1: the page's "Cargar anotaciones WebVTT" input and the editor's "Apply to video" set
+    `src` on the existing `<track>`; that track starts src-less, so Chromium has it in the
+    ERROR state and never reloads it. Result: 0 native cues, nothing rendered for a loaded
+    .vtt. Fix: swap in a fresh `<track>` element on each load (`loadAnnotationTrackFrom`)
+  - bug 2 (exposed once bug 1 was fixed): after "Apply to video" every cue rendered twice
+    (editor live preview + native copy). The overlay now skips the native track when it came
+    from the editor
+  - verified: `tools/verify-t04969.js` (new, Playwright e2e) passes 3/3 and fails on the
+    pre-fix `script.js`; all other `tools/verify-*.js` pass except `verify-t04955`/`-t04963`,
+    which need `tesseract` (absent here, same failure before this change)
+- tags: [project:sport-frames, type:e2e-bugfix, criterion:live-annotations]
+
 ### T-049.68 - Make verify-t04956 hermetic off the Pi
 
 - status: `done`

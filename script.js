@@ -2,7 +2,7 @@
   const track = document.getElementById("scrolly");
   const video = document.getElementById("scrolly-video");
   const progressBar = document.getElementById("scrolly-progress-bar");
-  const annotationTrack = document.getElementById("scrolly-annotations");
+  let annotationTrack = document.getElementById("scrolly-annotations");
   const vttAnnotation = document.getElementById("scrolly-vtt-annotation");
   const captions = Array.from(document.querySelectorAll(".scrolly__caption"));
   const fileInput = document.getElementById("file-input");
@@ -24,6 +24,7 @@
   let objectUrl = null;
   let annotationObjectUrl = null;
   let customAnnotationLoaded = false;
+  let annotationTrackFromEditor = false;
   let inView = false;
   let ticking = false;
   let preview = null;
@@ -1673,7 +1674,9 @@
   }
 
   function updateVttAnnotation() {
-    const activeCues = annotationTrack.track.activeCues;
+    // A track applied from the editor holds the same cues the editor already
+    // previews live below, so showing both rendered every cue twice.
+    const activeCues = annotationTrackFromEditor ? null : annotationTrack.track.activeCues;
     const previews = activeCues ? Array.from(activeCues, (cue) => ({
       text: nativeCueText(cue.text),
       x: Number.isFinite(cue.position) ? cue.position : 50,
@@ -1732,14 +1735,30 @@
     }
   }
 
-  function replaceActiveAnnotationTrack(vttText) {
+  // Chromium never reloads a <track> whose src changes after it has failed
+  // (the initial src-less track is in the ERROR state), so a loaded .vtt
+  // silently produced zero cues. Swap in a fresh <track> element instead.
+  function loadAnnotationTrackFrom(blob, { fromEditor = false } = {}) {
+    annotationTrackFromEditor = fromEditor;
     if (annotationObjectUrl) URL.revokeObjectURL(annotationObjectUrl);
-    annotationObjectUrl = URL.createObjectURL(new Blob([vttText], { type: "text/vtt" }));
+    annotationObjectUrl = URL.createObjectURL(blob);
     customAnnotationLoaded = true;
+    const freshTrack = document.createElement("track");
+    freshTrack.id = annotationTrack.id;
+    freshTrack.kind = "metadata";
+    freshTrack.src = annotationObjectUrl;
     annotationTrack.track.mode = "disabled";
-    annotationTrack.src = annotationObjectUrl;
+    annotationTrack.track.removeEventListener("cuechange", updateVttAnnotation);
+    annotationTrack.replaceWith(freshTrack);
+    annotationTrack = freshTrack;
     annotationTrack.track.mode = "hidden";
+    annotationTrack.track.addEventListener("cuechange", updateVttAnnotation);
+    annotationTrack.addEventListener("load", updateVttAnnotation);
     vttAnnotation.textContent = "";
+  }
+
+  function replaceActiveAnnotationTrack(vttText) {
+    loadAnnotationTrackFrom(new Blob([vttText], { type: "text/vtt" }), { fromEditor: true });
   }
 
   function loadVideoSource(src, { revoke } = {}) {
@@ -1780,13 +1799,7 @@
   vttFileInput.addEventListener("change", (e) => {
     const file = e.target.files && e.target.files[0];
     if (!file) return;
-    if (annotationObjectUrl) URL.revokeObjectURL(annotationObjectUrl);
-    annotationObjectUrl = URL.createObjectURL(file);
-    customAnnotationLoaded = true;
-    annotationTrack.track.mode = "disabled";
-    annotationTrack.src = annotationObjectUrl;
-    annotationTrack.track.mode = "hidden";
-    vttAnnotation.textContent = "";
+    loadAnnotationTrackFrom(file);
     track.scrollIntoView({ behavior: "smooth", block: "start" });
   });
 
